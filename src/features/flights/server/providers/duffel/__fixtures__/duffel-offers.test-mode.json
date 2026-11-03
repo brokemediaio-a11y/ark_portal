@@ -1,0 +1,797 @@
+{
+ "offer_request_id": "orq_0000BC0rh630dFAn7FgDoP",
+ "connecting": {
+  "created_at": "2026-11-01T18:39:57.000228Z",
+  "updated_at": "2026-11-01T18:39:57.000228Z",
+  "id": "off_034qB9UGF4Gl9r58LkQhgu",
+  "live_mode": false,
+  "expires_at": "2026-11-01T19:39:56.978238Z",
+  "supported_loyalty_programmes": [
+   "EY"
+  ],
+  "base_amount": "717.49",
+  "intended_base_amount": "717.49",
+  "base_currency": "EUR",
+  "tax_amount": "511.53",
+  "tax_currency": "EUR",
+  "total_amount": "1229.02",
+  "intended_total_amount": "1229.02",
+  "total_currency": "EUR",
+  "total_emissions_kg": "885",
+  "passenger_identity_documents_required": false,
+  "supported_passenger_identity_document_types": [
+   "known_traveler_number",
+   "passenger_redress_number",
+   "passport"
+  ],
+  "partial": false,
+  "private_fares": [],
+  "conditions": {
+   "change_before_departure": null,
+   "refund_before_departure": null
+  },
+  "owner": {
+   "iata_code": "EY",
+   "id": "arl_00009VME7DC2bj9quHXKoY",
+   "name": "Etihad Airways"
+  },
+  "slices": [
+   {
+    "id": "sli_0000BC0rhG4nLSXkDgamxa",
+    "duration": "P1DT5H30M",
+    "destination_type": "airport",
+    "origin_type": "airport",
+    "fare_brand_name": "Premium Economy Partially Refundable",
+    "ngs_shelf": 2,
+    "conditions": {
+     "change_before_departure": null,
+     "advance_seat_selection": null,
+     "priority_boarding": null,
+     "priority_check_in": null
+    },
+    "comparison_key": "AYlq8A==",
+    "origin": {
+     "iata_code": "MAN",
+     "iata_country_code": "GB",
+     "id": "arp_man_gb",
+     "name": "Manchester Airport",
+     "latitude": 53.35625,
+     "longitude": -2.27384,
+     "icao_code": "EGCC",
+     "time_zone": "Europe/London",
+     "city_name": "Manchester",
+     "iata_city_code": "MAN",
+     "type": "airport",
+     "city": null
+    },
+    "destination": {
+     "iata_code": "KBL",
+     "iata_country_code": "AF",
+     "id": "arp_kbl_af",
+     "name": "Hamid Karzai International Airport",
+     "latitude": 34.564627,
+     "longitude": 69.211798,
+     "icao_code": "OAKB",
+     "time_zone": "Asia/Kabul",
+     "city_name": "Kabul",
+     "iata_city_code": "KBL",
+     "type": "airport",
+     "city": null
+    },
+    "segments": [
+     {
+      "id": "seg_0000BC0rhG4nLSXkDgamxT",
+      "arriving_at": "2026-11-02T19:25:00",
+      "departing_at": "2026-11-02T08:15:00",
+      "destination_terminal": null,
+      "distance": null,
+      "duration": "PT7H10M",
+      "marketing_carrier_flight_number": "0078",
+      "operating_carrier_flight_number": "0078",
+      "origin_terminal": null,
+      "passengers": [
+       {
+        "passenger_id": "pas_0000BC0rh63MbvSN8LqVLL",
+        "cabin_class": "economy",
+        "cabin_class_marketing_name": "Economy",
+        "fare_basis_code": "QLX05H2R",
+        "baggages": [
+         {
+          "type": "carry_on",
+          "quantity": 1
+         }
+        ],
+        "cabin": {
+         "marketing_name": "Economy",
+         "name": "economy"
+        }
+       }
+      ],
+      "stops": [],
+      "aircraft": {
+       "iata_code": "77W",
+       "id": "arc_00009VMF8AhXSSRnQDI6HH",
+       "name": "Boeing 777-300ER"
+      },
+      "marketing_carrier": {
+       "iata_code": "EY",
+       "id": "arl_00009VME7DC2bj9quHXKoY",
+       "name": "Etihad Airways"
+      },
+      "operating_carrier": {
+       "iata_code": "EY",
+       "id": "arl_00009VME7DC2bj9quHXKoY",
+       "name": "Etihad Airways"
+      },
+      "origin": {
+       "iata_code": "MAN",
+       "iata_country_code": "GB",
+       "id": "arp_man_gb",
+       "name": "Manchester Airport",
+       "latitude": 53.35625,
+       "longitude": -2.27384,
+       "icao_code": "EGCC",
+       "time_zone": "Europe/London",
+       "city_name": "Manchester",
+       "iata_city_code": "MAN",
+       "type": "airport",
+       "city": null
+      },
+      "destination": {
+       "iata_code": "AUH",
+       "iata_country_code": "AE",
+       "id": "arp_auh_ae",
+       "name": "Abu Dhabi International Airport",
+       "latitude": 24.437469,
+       "longitude": 54.650586,
+       "icao_code": "OMAA",
+       "time_zone": "Asia/Dubai",
+       "city_name": "Abu Dhabi",
+       "iata_city_code": "AUH",
+       "type": "airport",
+       "city": {
+        "iata_code": "AUH",
+        "iata_country_code": "AE",
+        "id": "cit_auh_ae",
+        "name": "Abu Dhabi",
+        "latitude": null,
+        "longitude": null,
+        "icao_code": null,
+        "time_zone": null,
+        "city_name": null,
+        "iata_city_code": "AUH",
+        "type": "city"
+       }
+      }
+     },
+     {
+      "id": "seg_0000BC0rhG4nLSXkDgamxX",
+      "arriving_at": "2026-11-03T18:15:00",
+      "departing_at": "2026-11-03T14:45:00",
+      "destination_terminal": null,
+      "distance": null,
+      "duration": "PT3H",
+      "marketing_carrier_flight_number": "0310",
+      "operating_carrier_flight_number": "0310",
+      "origin_terminal": null,
+      "passengers": [
+       {
+        "passenger_id": "pas_0000BC0rh63MbvSN8LqVLL",
+        "cabin_class": "economy",
+        "cabin_class_marketing_name": "Economy",
+        "fare_basis_code": "QLX05H2R",
+        "baggages": [
+         {
+          "type": "carry_on",
+          "quantity": 1
+         }
+        ],
+        "cabin": {
+         "marketing_name": "Economy",
+         "name": "economy"
+        }
+       }
+      ],
+      "stops": [],
+      "aircraft": {
+       "iata_code": "32A",
+       "id": "arc_00009Y7nq3J0w9nlhN3x3Y",
+       "name": "Airbus A320 (sharklets)"
+      },
+      "marketing_carrier": {
+       "iata_code": "EY",
+       "id": "arl_00009VME7DC2bj9quHXKoY",
+       "name": "Etihad Airways"
+      },
+      "operating_carrier": {
+       "iata_code": "EY",
+       "id": "arl_00009VME7DC2bj9quHXKoY",
+       "name": "Etihad Airways"
+      },
+      "origin": {
+       "iata_code": "AUH",
+       "iata_country_code": "AE",
+       "id": "arp_auh_ae",
+       "name": "Abu Dhabi International Airport",
+       "latitude": 24.437469,
+       "longitude": 54.650586,
+       "icao_code": "OMAA",
+       "time_zone": "Asia/Dubai",
+       "city_name": "Abu Dhabi",
+       "iata_city_code": "AUH",
+       "type": "airport",
+       "city": {
+        "iata_code": "AUH",
+        "iata_country_code": "AE",
+        "id": "cit_auh_ae",
+        "name": "Abu Dhabi",
+        "latitude": null,
+        "longitude": null,
+        "icao_code": null,
+        "time_zone": null,
+        "city_name": null,
+        "iata_city_code": "AUH",
+        "type": "city"
+       }
+      },
+      "destination": {
+       "iata_code": "KBL",
+       "iata_country_code": "AF",
+       "id": "arp_kbl_af",
+       "name": "Hamid Karzai International Airport",
+       "latitude": 34.564627,
+       "longitude": 69.211798,
+       "icao_code": "OAKB",
+       "time_zone": "Asia/Kabul",
+       "city_name": "Kabul",
+       "iata_city_code": "KBL",
+       "type": "airport",
+       "city": null
+      }
+     }
+    ]
+   },
+   {
+    "id": "sli_0000BC0rhG4nLSXkDgamxv",
+    "duration": "P1DT7H30M",
+    "destination_type": "airport",
+    "origin_type": "airport",
+    "fare_brand_name": "Premium Economy Partially Refundable",
+    "ngs_shelf": 2,
+    "conditions": {
+     "change_before_departure": null,
+     "advance_seat_selection": false,
+     "priority_boarding": null,
+     "priority_check_in": false
+    },
+    "comparison_key": "BUiU4w==",
+    "origin": {
+     "iata_code": "KBL",
+     "iata_country_code": "AF",
+     "id": "arp_kbl_af",
+     "name": "Hamid Karzai International Airport",
+     "latitude": 34.564627,
+     "longitude": 69.211798,
+     "icao_code": "OAKB",
+     "time_zone": "Asia/Kabul",
+     "city_name": "Kabul",
+     "iata_city_code": "KBL",
+     "type": "airport",
+     "city": null
+    },
+    "destination": {
+     "iata_code": "MAN",
+     "iata_country_code": "GB",
+     "id": "arp_man_gb",
+     "name": "Manchester Airport",
+     "latitude": 53.35625,
+     "longitude": -2.27384,
+     "icao_code": "EGCC",
+     "time_zone": "Europe/London",
+     "city_name": "Manchester",
+     "iata_city_code": "MAN",
+     "type": "airport",
+     "city": null
+    },
+    "segments": [
+     {
+      "id": "seg_0000BC0rhG4nLSXkDgamxo",
+      "arriving_at": "2026-11-12T18:00:00",
+      "departing_at": "2026-11-12T15:00:00",
+      "destination_terminal": null,
+      "distance": null,
+      "duration": "PT3H30M",
+      "marketing_carrier_flight_number": "0313",
+      "operating_carrier_flight_number": "0313",
+      "origin_terminal": null,
+      "passengers": [
+       {
+        "passenger_id": "pas_0000BC0rh63MbvSN8LqVLL",
+        "cabin_class": "economy",
+        "cabin_class_marketing_name": "Economy",
+        "fare_basis_code": "QLX05H2R",
+        "baggages": [
+         {
+          "type": "carry_on",
+          "quantity": 1
+         }
+        ],
+        "cabin": {
+         "marketing_name": "Economy",
+         "name": "economy"
+        }
+       }
+      ],
+      "stops": [],
+      "aircraft": {
+       "iata_code": "32A",
+       "id": "arc_00009Y7nq3J0w9nlhN3x3Y",
+       "name": "Airbus A320 (sharklets)"
+      },
+      "marketing_carrier": {
+       "iata_code": "EY",
+       "id": "arl_00009VME7DC2bj9quHXKoY",
+       "name": "Etihad Airways"
+      },
+      "operating_carrier": {
+       "iata_code": "EY",
+       "id": "arl_00009VME7DC2bj9quHXKoY",
+       "name": "Etihad Airways"
+      },
+      "origin": {
+       "iata_code": "KBL",
+       "iata_country_code": "AF",
+       "id": "arp_kbl_af",
+       "name": "Hamid Karzai International Airport",
+       "latitude": 34.564627,
+       "longitude": 69.211798,
+       "icao_code": "OAKB",
+       "time_zone": "Asia/Kabul",
+       "city_name": "Kabul",
+       "iata_city_code": "KBL",
+       "type": "airport",
+       "city": null
+      },
+      "destination": {
+       "iata_code": "AUH",
+       "iata_country_code": "AE",
+       "id": "arp_auh_ae",
+       "name": "Abu Dhabi International Airport",
+       "latitude": 24.437469,
+       "longitude": 54.650586,
+       "icao_code": "OMAA",
+       "time_zone": "Asia/Dubai",
+       "city_name": "Abu Dhabi",
+       "iata_city_code": "AUH",
+       "type": "airport",
+       "city": {
+        "iata_code": "AUH",
+        "iata_country_code": "AE",
+        "id": "cit_auh_ae",
+        "name": "Abu Dhabi",
+        "latitude": null,
+        "longitude": null,
+        "icao_code": null,
+        "time_zone": null,
+        "city_name": null,
+        "iata_city_code": "AUH",
+        "type": "city"
+       }
+      }
+     },
+     {
+      "id": "seg_0000BC0rhG4nLSXkDgamxs",
+      "arriving_at": "2026-11-13T18:00:00",
+      "departing_at": "2026-11-13T14:00:00",
+      "destination_terminal": null,
+      "distance": null,
+      "duration": "PT8H",
+      "marketing_carrier_flight_number": "0075",
+      "operating_carrier_flight_number": "0075",
+      "origin_terminal": null,
+      "passengers": [
+       {
+        "passenger_id": "pas_0000BC0rh63MbvSN8LqVLL",
+        "cabin_class": "economy",
+        "cabin_class_marketing_name": "Economy",
+        "fare_basis_code": "QLX05H2R",
+        "baggages": [
+         {
+          "type": "carry_on",
+          "quantity": 1
+         }
+        ],
+        "cabin": {
+         "marketing_name": "Economy",
+         "name": "economy"
+        }
+       }
+      ],
+      "stops": [],
+      "aircraft": {
+       "iata_code": "789",
+       "id": "arc_00009Y7sdMgecbtm6IHItE",
+       "name": "Boeing 787-9"
+      },
+      "marketing_carrier": {
+       "iata_code": "EY",
+       "id": "arl_00009VME7DC2bj9quHXKoY",
+       "name": "Etihad Airways"
+      },
+      "operating_carrier": {
+       "iata_code": "EY",
+       "id": "arl_00009VME7DC2bj9quHXKoY",
+       "name": "Etihad Airways"
+      },
+      "origin": {
+       "iata_code": "AUH",
+       "iata_country_code": "AE",
+       "id": "arp_auh_ae",
+       "name": "Abu Dhabi International Airport",
+       "latitude": 24.437469,
+       "longitude": 54.650586,
+       "icao_code": "OMAA",
+       "time_zone": "Asia/Dubai",
+       "city_name": "Abu Dhabi",
+       "iata_city_code": "AUH",
+       "type": "airport",
+       "city": {
+        "iata_code": "AUH",
+        "iata_country_code": "AE",
+        "id": "cit_auh_ae",
+        "name": "Abu Dhabi",
+        "latitude": null,
+        "longitude": null,
+        "icao_code": null,
+        "time_zone": null,
+        "city_name": null,
+        "iata_city_code": "AUH",
+        "type": "city"
+       }
+      },
+      "destination": {
+       "iata_code": "MAN",
+       "iata_country_code": "GB",
+       "id": "arp_man_gb",
+       "name": "Manchester Airport",
+       "latitude": 53.35625,
+       "longitude": -2.27384,
+       "icao_code": "EGCC",
+       "time_zone": "Europe/London",
+       "city_name": "Manchester",
+       "iata_city_code": "MAN",
+       "type": "airport",
+       "city": null
+      }
+     }
+    ]
+   }
+  ],
+  "passengers": [
+   {
+    "id": "pas_0000BC0rh63MbvSN8LqVLL",
+    "type": "adult",
+    "fare_type": null,
+    "age": null,
+    "given_name": null,
+    "family_name": null,
+    "loyalty_programme_accounts": []
+   }
+  ],
+  "available_services": null,
+  "payment_requirements": {
+   "requires_instant_payment": false,
+   "payment_required_by": "2026-11-02T18:39:56.978210Z",
+   "price_guarantee_expires_at": null
+  },
+  "intended_services": null,
+  "available_airline_credit_ids": []
+ },
+ "direct": {
+  "created_at": "2026-11-01T18:39:55.323311Z",
+  "updated_at": "2026-11-01T18:39:55.323311Z",
+  "id": "off_034qB9RXbLr7ZHOH0iakYi",
+  "live_mode": false,
+  "expires_at": "2026-11-01T19:09:55.323324Z",
+  "supported_loyalty_programmes": [],
+  "base_amount": "356.60",
+  "intended_base_amount": "356.60",
+  "base_currency": "EUR",
+  "tax_amount": "64.19",
+  "tax_currency": "EUR",
+  "total_amount": "420.79",
+  "intended_total_amount": "420.79",
+  "total_currency": "EUR",
+  "total_emissions_kg": "130",
+  "passenger_identity_documents_required": false,
+  "supported_passenger_identity_document_types": [
+   "passport",
+   "known_traveler_number",
+   "passenger_redress_number"
+  ],
+  "partial": false,
+  "private_fares": [],
+  "conditions": {
+   "change_before_departure": {
+    "allowed": false,
+    "penalty_amount": null,
+    "penalty_currency": null
+   },
+   "refund_before_departure": {
+    "allowed": true,
+    "penalty_amount": "70.00",
+    "penalty_currency": "EUR"
+   }
+  },
+  "owner": {
+   "iata_code": "ZZ",
+   "id": "arl_00009VME7D6ivUu8dn35WK",
+   "name": "Duffel Airways"
+  },
+  "slices": [
+   {
+    "id": "sli_0000BC0rh6HBmWW1pEJXt6",
+    "duration": "PT8H20M",
+    "destination_type": "airport",
+    "origin_type": "airport",
+    "fare_brand_name": "Basic",
+    "ngs_shelf": 1,
+    "conditions": {
+     "change_before_departure": {
+      "allowed": false,
+      "penalty_amount": null,
+      "penalty_currency": null
+     },
+     "advance_seat_selection": null,
+     "priority_boarding": null,
+     "priority_check_in": null
+    },
+    "comparison_key": "BYjXbA==",
+    "origin": {
+     "iata_code": "MAN",
+     "iata_country_code": "GB",
+     "id": "arp_man_gb",
+     "name": "Manchester Airport",
+     "latitude": 53.35625,
+     "longitude": -2.27384,
+     "icao_code": "EGCC",
+     "time_zone": "Europe/London",
+     "city_name": "Manchester",
+     "iata_city_code": "MAN",
+     "type": "airport",
+     "city": null
+    },
+    "destination": {
+     "iata_code": "KBL",
+     "iata_country_code": "AF",
+     "id": "arp_kbl_af",
+     "name": "Hamid Karzai International Airport",
+     "latitude": 34.564627,
+     "longitude": 69.211798,
+     "icao_code": "OAKB",
+     "time_zone": "Asia/Kabul",
+     "city_name": "Kabul",
+     "iata_city_code": "KBL",
+     "type": "airport",
+     "city": null
+    },
+    "segments": [
+     {
+      "id": "seg_0000BC0rh6GpnqERo89GMV",
+      "arriving_at": "2026-11-02T13:36:00",
+      "departing_at": "2026-11-02T00:46:00",
+      "destination_terminal": "1",
+      "distance": "5817.518665879806",
+      "duration": "PT8H20M",
+      "marketing_carrier_flight_number": "7426",
+      "operating_carrier_flight_number": "7426",
+      "origin_terminal": "2",
+      "passengers": [
+       {
+        "passenger_id": "pas_0000BC0rh63MbvSN8LqVLL",
+        "cabin_class": "economy",
+        "cabin_class_marketing_name": "Economy",
+        "fare_basis_code": "Y20LGTN2",
+        "baggages": [
+         {
+          "type": "checked",
+          "quantity": 1
+         },
+         {
+          "type": "carry_on",
+          "quantity": 1
+         }
+        ],
+        "cabin": {
+         "marketing_name": "Economy",
+         "name": "economy"
+        }
+       }
+      ],
+      "stops": [],
+      "aircraft": null,
+      "marketing_carrier": {
+       "iata_code": "ZZ",
+       "id": "arl_00009VME7D6ivUu8dn35WK",
+       "name": "Duffel Airways"
+      },
+      "operating_carrier": {
+       "iata_code": "ZZ",
+       "id": "arl_00009VME7D6ivUu8dn35WK",
+       "name": "Duffel Airways"
+      },
+      "origin": {
+       "iata_code": "MAN",
+       "iata_country_code": "GB",
+       "id": "arp_man_gb",
+       "name": "Manchester Airport",
+       "latitude": 53.35625,
+       "longitude": -2.27384,
+       "icao_code": "EGCC",
+       "time_zone": "Europe/London",
+       "city_name": "Manchester",
+       "iata_city_code": "MAN",
+       "type": "airport",
+       "city": null
+      },
+      "destination": {
+       "iata_code": "KBL",
+       "iata_country_code": "AF",
+       "id": "arp_kbl_af",
+       "name": "Hamid Karzai International Airport",
+       "latitude": 34.564627,
+       "longitude": 69.211798,
+       "icao_code": "OAKB",
+       "time_zone": "Asia/Kabul",
+       "city_name": "Kabul",
+       "iata_city_code": "KBL",
+       "type": "airport",
+       "city": null
+      }
+     }
+    ]
+   },
+   {
+    "id": "sli_0000BC0rh6HBmWW1pEJXtZ",
+    "duration": "PT8H20M",
+    "destination_type": "airport",
+    "origin_type": "airport",
+    "fare_brand_name": "Basic",
+    "ngs_shelf": 1,
+    "conditions": {
+     "change_before_departure": {
+      "allowed": false,
+      "penalty_amount": null,
+      "penalty_currency": null
+     },
+     "advance_seat_selection": null,
+     "priority_boarding": null,
+     "priority_check_in": null
+    },
+    "comparison_key": "nHxn",
+    "origin": {
+     "iata_code": "KBL",
+     "iata_country_code": "AF",
+     "id": "arp_kbl_af",
+     "name": "Hamid Karzai International Airport",
+     "latitude": 34.564627,
+     "longitude": 69.211798,
+     "icao_code": "OAKB",
+     "time_zone": "Asia/Kabul",
+     "city_name": "Kabul",
+     "iata_city_code": "KBL",
+     "type": "airport",
+     "city": null
+    },
+    "destination": {
+     "iata_code": "MAN",
+     "iata_country_code": "GB",
+     "id": "arp_man_gb",
+     "name": "Manchester Airport",
+     "latitude": 53.35625,
+     "longitude": -2.27384,
+     "icao_code": "EGCC",
+     "time_zone": "Europe/London",
+     "city_name": "Manchester",
+     "iata_city_code": "MAN",
+     "type": "airport",
+     "city": null
+    },
+    "segments": [
+     {
+      "id": "seg_0000BC0rh6HBmWW1pEJXtM",
+      "arriving_at": "2026-11-12T12:20:00",
+      "departing_at": "2026-11-12T08:30:00",
+      "destination_terminal": "1",
+      "distance": "5817.518665879806",
+      "duration": "PT8H20M",
+      "marketing_carrier_flight_number": "7426",
+      "operating_carrier_flight_number": "7426",
+      "origin_terminal": "2",
+      "passengers": [
+       {
+        "passenger_id": "pas_0000BC0rh63MbvSN8LqVLL",
+        "cabin_class": "economy",
+        "cabin_class_marketing_name": "Economy",
+        "fare_basis_code": "Y20LGTN2",
+        "baggages": [
+         {
+          "type": "checked",
+          "quantity": 1
+         },
+         {
+          "type": "carry_on",
+          "quantity": 1
+         }
+        ],
+        "cabin": {
+         "marketing_name": "Economy",
+         "name": "economy"
+        }
+       }
+      ],
+      "stops": [],
+      "aircraft": null,
+      "marketing_carrier": {
+       "iata_code": "ZZ",
+       "id": "arl_00009VME7D6ivUu8dn35WK",
+       "name": "Duffel Airways"
+      },
+      "operating_carrier": {
+       "iata_code": "ZZ",
+       "id": "arl_00009VME7D6ivUu8dn35WK",
+       "name": "Duffel Airways"
+      },
+      "origin": {
+       "iata_code": "KBL",
+       "iata_country_code": "AF",
+       "id": "arp_kbl_af",
+       "name": "Hamid Karzai International Airport",
+       "latitude": 34.564627,
+       "longitude": 69.211798,
+       "icao_code": "OAKB",
+       "time_zone": "Asia/Kabul",
+       "city_name": "Kabul",
+       "iata_city_code": "KBL",
+       "type": "airport",
+       "city": null
+      },
+      "destination": {
+       "iata_code": "MAN",
+       "iata_country_code": "GB",
+       "id": "arp_man_gb",
+       "name": "Manchester Airport",
+       "latitude": 53.35625,
+       "longitude": -2.27384,
+       "icao_code": "EGCC",
+       "time_zone": "Europe/London",
+       "city_name": "Manchester",
+       "iata_city_code": "MAN",
+       "type": "airport",
+       "city": null
+      }
+     }
+    ]
+   }
+  ],
+  "passengers": [
+   {
+    "id": "pas_0000BC0rh63MbvSN8LqVLL",
+    "type": "adult",
+    "fare_type": null,
+    "age": null,
+    "given_name": null,
+    "family_name": null,
+    "loyalty_programme_accounts": []
+   }
+  ],
+  "available_services": null,
+  "payment_requirements": {
+   "requires_instant_payment": false,
+   "payment_required_by": "2026-11-04T18:39:55Z",
+   "price_guarantee_expires_at": "2026-11-03T18:39:55Z"
+  },
+  "intended_services": null,
+  "available_airline_credit_ids": []
+ }
+}

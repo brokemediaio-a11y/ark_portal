@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens. Brand colours mirror src/config/brand.ts (used by the PDF);
+ * keep the two in sync when Ark Travelers supplies final brand colours.
+ */
+@theme {
+  --color-brand: #0b3d5c;
+  --color-brand-strong: #082d44;
+  --color-brand-soft: #e7f0f6;
+  --color-brand-ink: #0a2f47;
+  --color-accent: #e8a33d;
+
+  --color-ink: #13222e;
+  --color-ink-muted: #5b6b78;
+  --color-ink-faint: #93a1ac;
+  --color-line: #d9e1e7;
+  --color-surface: #f4f7f9;
+  --color-canvas: #eef2f5;
+
+  --color-success: #1f9d61;
+  --color-success-soft: #e6f6ee;
+  --color-success-ink: #13623d;
+  --color-warning: #d9930d;
+  --color-warning-soft: #fff6e2;
+  --color-warning-ink: #7a5205;
+  --color-danger: #d64545;
+  --color-danger-soft: #fdecec;
+  --color-danger-ink: #8f2424;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --shadow-card: 0 1px 2px rgb(16 34 46 / 0.04), 0 4px 16px -4px rgb(16 34 46 / 0.08);
+  --spacing-13: 3.25rem;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+}
+
+/* Hide number-input spinners: they invite accidental changes. */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
