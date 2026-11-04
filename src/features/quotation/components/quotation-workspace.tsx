@@ -73,10 +73,10 @@ export function QuotationWorkspace({ initial }: { initial: Quotation }) {
       <div className="space-y-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
-            <ButtonLink href="/" variant="ghost" size="sm" icon={ArrowLeft} className="-ml-3 mb-1">
-              All quotations
+            <ButtonLink href="/quotations" variant="ghost" size="sm" icon={ArrowLeft} className="-ml-3 mb-1">
+              My quotations
             </ButtonLink>
-            <h1 className="flex flex-wrap items-center gap-2 text-2xl font-bold text-ink">
+            <h1 className="flex flex-wrap items-center gap-2 text-2xl font-extrabold text-brand">
               Quotation {q.quoteNumber}
               <StatusBadge status={q.status} />
               {q.sourceType === "demo" && <Badge tone="danger">DEMO DATA</Badge>}

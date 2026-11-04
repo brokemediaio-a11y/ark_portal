@@ -5,12 +5,12 @@ import type { CustomerQuote, CustomerSegment } from "@/features/quotation/custom
 const c = brand.colors;
 
 const s = StyleSheet.create({
-  page: { paddingTop: 36, paddingBottom: 64, paddingHorizontal: 40, fontSize: 10, fontFamily: "Helvetica", color: "#13222E" },
+  page: { paddingTop: 36, paddingBottom: 64, paddingHorizontal: 40, fontSize: 10, fontFamily: "Helvetica", color: "#1A2633" },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", paddingBottom: 16, borderBottomWidth: 3, borderBottomColor: c.primary },
   logoMark: { flexDirection: "row", alignItems: "center" },
   logoBox: { width: 38, height: 38, borderRadius: 8, backgroundColor: c.primary, justifyContent: "center", alignItems: "center", marginRight: 10 },
   logoLetter: { color: "#FFFFFF", fontSize: 18, fontFamily: "Helvetica-Bold" },
-  logoImage: { height: 40, objectFit: "contain" },
+  logoImage: { height: 58, objectFit: "contain" },
   brandName: { fontSize: 18, fontFamily: "Helvetica-Bold", color: c.primary },
   tagline: { fontSize: 8.5, color: c.muted, marginTop: 2 },
   contact: { alignItems: "flex-end", fontSize: 8.5, color: c.muted, lineHeight: 1.5 },

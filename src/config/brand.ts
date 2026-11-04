@@ -9,13 +9,13 @@ export const brand = {
   name: "Ark Travelers",
   tagline: "Your journey, our priority",
   /** Path under /public to a PNG/JPG logo, or null to use the text mark. */
-  logoPath: null as string | null,
+  logoPath: "/brand/ark-logo-navy.png" as string | null,
   colors: {
-    primary: "#0B3D5C",
-    accent: "#E8A33D",
-    muted: "#5B6B78",
-    border: "#D9E1E7",
-    surface: "#F4F7F9",
+    primary: "#1F3043",
+    accent: "#D08A2E",
+    muted: "#526170",
+    border: "#D9E0E7",
+    surface: "#F1F4F6",
   },
   contact: {
     phone: "+00 000 0000000",

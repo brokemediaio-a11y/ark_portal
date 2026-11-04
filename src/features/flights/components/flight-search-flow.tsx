@@ -52,7 +52,7 @@ export function FlightSearchFlow() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-ink sm:text-3xl">Search flights</h1>
+        <h1 className="text-2xl font-extrabold text-brand sm:text-3xl">Search flights</h1>
         <p className="mt-1 text-ink-muted">Search live airline fares, choose an itinerary, and turn it into a branded quotation.</p>
       </div>
 

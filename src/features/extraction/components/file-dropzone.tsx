@@ -1,7 +1,8 @@
 "use client";
 
-import { ClipboardPaste, FileText, ImageIcon, UploadCloud } from "lucide-react";
+import { ClipboardPaste, FileText, FolderOpen, ImageIcon, UploadCloud } from "lucide-react";
 import { useEffect, useRef, useState, type DragEvent } from "react";
+import { Button } from "@/components/ui/button";
 import { ACCEPTED_EXTENSIONS, ACCEPTED_FILES_LABEL } from "@/config/upload";
 import { cn } from "@/lib/cn";
 import { checkFileBasics } from "../file-validation";
@@ -68,16 +69,10 @@ export function FileDropzone({ onFile, onReject, disabled }: FileDropzoneProps) 
       <p className="text-lg font-semibold text-ink">
         {dragging ? "Drop the file here" : "Drag the supplier quotation here"}
       </p>
-      <p className="mt-1 text-sm text-ink-muted">
-        or{" "}
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          className="cursor-pointer font-semibold text-brand underline-offset-2 hover:underline"
-        >
-          choose a file from your computer
-        </button>
-      </p>
+      <p className="mt-1 text-sm text-ink-muted">or pick it from your computer</p>
+      <Button size="lg" icon={FolderOpen} className="mt-5" onClick={() => inputRef.current?.click()}>
+        Choose a file
+      </Button>
 
       <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-ink-muted">
         <span className="inline-flex items-center gap-1.5"><FileText size={14} /> PDF</span>

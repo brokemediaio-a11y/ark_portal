@@ -46,7 +46,7 @@ export function UploadQuotationFlow() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-ink sm:text-3xl">Create a quotation</h1>
+        <h1 className="text-2xl font-extrabold text-brand sm:text-3xl">Create a quotation</h1>
         <p className="mt-1 text-ink-muted">
           Upload the supplier&apos;s quotation and we&apos;ll fill in the flight details for you. You&apos;ll be able to check and change everything before anything is sent.
         </p>
@@ -94,12 +94,15 @@ export function UploadQuotationFlow() {
       </Card>
 
       {!working && (
-        <div className="flex flex-col items-center gap-2 text-center text-sm text-ink-muted sm:flex-row sm:justify-center">
-          <span>No document?</span>
-          <Button variant="ghost" size="sm" icon={PencilLine} onClick={startManually}>
+        <section aria-labelledby="no-file-heading" className="flex flex-col gap-4 rounded-xl border border-line bg-white p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+          <div>
+            <h2 id="no-file-heading" className="font-display text-lg font-bold text-brand">Don&apos;t have a file?</h2>
+            <p className="mt-0.5 text-sm text-ink-muted">You can still make a quotation. Type in the flights and price yourself.</p>
+          </div>
+          <Button variant="secondary" size="lg" icon={PencilLine} onClick={startManually} className="shrink-0">
             Type the details in yourself
           </Button>
-        </div>
+        </section>
       )}
     </div>
   );

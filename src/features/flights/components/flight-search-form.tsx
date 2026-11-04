@@ -141,7 +141,7 @@ export function FlightSearchForm({ initial, loading, serverError, onSearch }: Fl
           <div key={i} className="space-y-2">
             {values.tripType === "multicity" && (
               <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold tracking-wide text-ink-faint uppercase">Flight {i + 1}</p>
+                <p className="text-sm font-semibold text-ink-muted">Flight {i + 1}</p>
                 {values.legs.length > 2 && (
                   <Button variant="danger" size="sm" icon={Trash2} onClick={() => update({ legs: values.legs.filter((_, j) => j !== i) })}>
                     Remove
@@ -149,12 +149,12 @@ export function FlightSearchForm({ initial, loading, serverError, onSearch }: Fl
                 )}
               </div>
             )}
-            <div className="grid items-start gap-3 lg:grid-cols-[1fr_auto_1fr_11rem]">
+            <div className="grid items-start gap-3 xl:grid-cols-[1fr_auto_1fr_11rem]">
               <AirportField label="From" value={leg.origin} onChange={(p) => updateLeg(i, { origin: p })} error={errorFor(`legs.${i}.origin`)} autoFocus={i === 0 && !leg.origin} />
               <button
                 type="button"
                 onClick={() => updateLeg(i, { origin: leg.destination, destination: leg.origin })}
-                className="mx-auto grid size-10 cursor-pointer place-items-center rounded-full border border-line bg-white text-ink-muted transition-colors hover:border-brand hover:text-brand lg:mt-8"
+                className="mx-auto grid size-10 cursor-pointer place-items-center rounded-full border border-line bg-white text-ink-muted transition-colors hover:border-brand hover:text-brand xl:mt-8"
                 aria-label="Swap from and to"
                 title="Swap"
               >
@@ -174,8 +174,8 @@ export function FlightSearchForm({ initial, loading, serverError, onSearch }: Fl
         ))}
 
         {values.tripType === "return" && (
-          <div className="grid gap-3 lg:grid-cols-[1fr_auto_1fr_11rem]">
-            <div className="hidden lg:col-span-3 lg:block" />
+          <div className="grid gap-3 xl:grid-cols-[1fr_auto_1fr_11rem]">
+            <div className="hidden xl:col-span-3 xl:block" />
             <TextField label="Return date" type="date" value={values.returnDate} min={values.legs[0].date ?? today ?? undefined} error={errorFor("returnDate")} onChange={(d) => update({ returnDate: d }, ["returnDate"])} />
           </div>
         )}

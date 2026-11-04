@@ -17,9 +17,10 @@ const relativeTime = (iso: string) => {
   return rtf.format(-Math.round(minutes / 60 / 24), "day");
 };
 
-export function RecentQuotations() {
+export function RecentQuotations({ limit }: { limit?: number } = {}) {
   const map = useQuotationMap();
-  const quotations = map ? quotationStore.list() : null;
+  const all = map ? quotationStore.list() : null;
+  const quotations = all && limit ? all.slice(0, limit) : all;
 
   const remove = (id: string, quoteNumber: string) => {
     if (window.confirm(`Delete quotation ${quoteNumber}? This can't be undone.`)) quotationStore.remove(id);
@@ -27,12 +28,13 @@ export function RecentQuotations() {
 
   return (
     <Card>
-      <CardHeader icon={FileStack} title="Recent quotations" description="Saved on this computer. Click one to continue where you left off." />
+      <CardHeader icon={FileStack} title={limit ? "Your latest quotations" : "All quotations"} description="Saved on this computer only. Click one to carry on where you left off."
+        actions={limit && all && all.length > limit ? <Link href="/quotations" className="text-sm font-semibold text-brand hover:underline">See all {all.length}</Link> : undefined} />
       {!quotations ? (
         <div className="grid place-items-center py-12 text-ink-muted"><Loader2 className="animate-spin" aria-label="Loading" /></div>
       ) : quotations.length === 0 ? (
         <div className="px-6 py-12 text-center text-sm text-ink-muted">
-          No quotations yet. Click <span className="font-medium text-ink">Create quotation</span> above to make your first one.
+          You haven&apos;t made any quotations yet. Choose one of the two options above to start your first.
         </div>
       ) : (
         <ul className="divide-y divide-line">
@@ -43,7 +45,7 @@ export function RecentQuotations() {
                 <Link href={`/quotations/${q.id}`} className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1 px-5 py-4 sm:px-6">
                   <div className="min-w-0 flex-1">
                     <p className="flex flex-wrap items-center gap-2 font-medium text-ink">
-                      <span className="truncate">{view.routeSummary || "New quotation"}</span>
+                      <span className="truncate">{/[A-Za-z]/.test(view.routeSummary) ? view.routeSummary : "Untitled quotation"}</span>
                       <StatusBadge status={q.status} />
                       {q.sourceType === "demo" && <Badge tone="danger">DEMO</Badge>}
                       {q.providerSnapshot && !q.providerSnapshot.liveMode && <Badge tone="danger">TEST MODE</Badge>}

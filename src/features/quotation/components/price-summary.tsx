@@ -20,7 +20,7 @@ export function PriceSummary({ price, currency }: { price: PriceBreakdown | null
           <Equal size={14} aria-label="equals" />
         </span>
       </div>
-      <p className="mt-1 text-xs tracking-wide text-white/60 uppercase">Customer pays</p>
+      <p className="mt-1 text-xs text-white/70">Customer pays</p>
       <p className="text-3xl font-bold tabular-nums">{formatMoney(price.sellingTotal, currency)}</p>
     </div>
   );

@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import { AppHeader } from "@/components/layout/app-header";
+import { Manrope, Public_Sans } from "next/font/google";
+import { AppShell } from "@/components/layout/app-shell";
 import { brand } from "@/config/brand";
 import "./globals.css";
 
-const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
+const publicSans = Public_Sans({ variable: "--font-public-sans", subsets: ["latin"] });
+const manrope = Manrope({ variable: "--font-manrope", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: { default: `${brand.name} · Quotations`, template: `%s · ${brand.name}` },
@@ -15,10 +16,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     // suppressHydrationWarning: browser extensions (e.g. Grammarly) add attributes to <html>/<body>.
-    <html lang="en" className={`${inter.variable} h-full antialiased`} suppressHydrationWarning>
-      <body className="flex min-h-full flex-col font-sans" suppressHydrationWarning>
-        <AppHeader />
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-8">{children}</main>
+    <html lang="en" className={`${publicSans.variable} ${manrope.variable} h-full antialiased`} suppressHydrationWarning>
+      <body className="min-h-full font-sans" suppressHydrationWarning>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );
