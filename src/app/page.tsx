@@ -76,9 +76,9 @@ export default function DashboardPage() {
                   </span>
                 </span>
                 <span className="ticket-stub">
-                  <span className="font-semibold text-brand group-hover:underline">{action}</span>
-                  <span className="grid size-9 place-items-center rounded-full bg-accent text-brand-ink transition-transform group-hover:translate-x-0.5">
-                    <ArrowRight size={18} aria-hidden />
+                  <span className="text-lg font-bold text-white">{action}</span>
+                  <span className="grid size-11 shrink-0 place-items-center rounded-full bg-accent text-brand-ink transition-transform group-hover:translate-x-1">
+                    <ArrowRight size={22} aria-hidden />
                   </span>
                 </span>
               </Link>
