@@ -9,6 +9,7 @@ import { localToday } from "@/lib/dates";
 import { useToday } from "@/lib/use-today";
 import { MAX_PASSENGERS, MAX_SLICES, type CabinClass, type FlightSearchRequest, type Place } from "../schema";
 import { AirportField } from "./airport-field";
+import { FlightPath } from "./flight-path";
 import { PassengerPicker, type PassengerValues } from "./passenger-picker";
 
 export type TripType = "return" | "oneway" | "multicity";
@@ -53,6 +54,14 @@ const emptyLeg = (origin: Place | null = null): LegValues => ({ origin, destinat
 
 type Errors = Record<string, string>;
 
+/** "8 nights" between two dates, or "Same day"; empty until both are chosen and in order. */
+function tripLengthLabel(departure: string | null, back: string | null): string {
+  if (!departure || !back) return "";
+  const nights = Math.round((Date.parse(`${back}T00:00:00Z`) - Date.parse(`${departure}T00:00:00Z`)) / 86_400_000);
+  if (nights < 0) return "";
+  return nights === 0 ? "Same day" : `${nights} night${nights === 1 ? "" : "s"}`;
+}
+
 function validate(v: FlightSearchFormValues, today: string): Errors {
   const errors: Errors = {};
   const legs = v.tripType === "multicity" ? v.legs : v.legs.slice(0, 1);
@@ -70,7 +79,9 @@ function validate(v: FlightSearchFormValues, today: string): Errors {
     else if (v.legs[0].date && v.returnDate < v.legs[0].date) errors.returnDate = "Must be on or after the departure date.";
   }
   const p = v.passengers;
-  if (p.adults + p.childAges.length + p.infantAges.length > MAX_PASSENGERS) errors.passengers = `At most ${MAX_PASSENGERS} travellers per search.`;
+  const travellers = p.adults + p.childAges.length + p.infantAges.length;
+  if (travellers === 0) errors.passengers = "Add at least one traveller.";
+  else if (travellers > MAX_PASSENGERS) errors.passengers = `At most ${MAX_PASSENGERS} travellers per search.`;
   else if (p.infantAges.length > p.adults) errors.passengers = "Each infant needs an adult to sit with.";
   return errors;
 }
@@ -149,7 +160,7 @@ export function FlightSearchForm({ initial, loading, serverError, onSearch }: Fl
                 )}
               </div>
             )}
-            <div className="grid items-start gap-3 xl:grid-cols-[1fr_auto_1fr_11rem]">
+            <div className="grid items-start gap-3 xl:grid-cols-[1fr_auto_1fr]">
               <AirportField label="From" value={leg.origin} onChange={(p) => updateLeg(i, { origin: p })} error={errorFor(`legs.${i}.origin`)} autoFocus={i === 0 && !leg.origin} />
               <button
                 type="button"
@@ -161,24 +172,33 @@ export function FlightSearchForm({ initial, loading, serverError, onSearch }: Fl
                 <ArrowLeftRight size={18} />
               </button>
               <AirportField label="To" value={leg.destination} onChange={(p) => updateLeg(i, { destination: p })} error={errorFor(`legs.${i}.destination`)} />
+            </div>
+            <div className="grid items-start gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(6rem,14rem)_minmax(0,1fr)] lg:max-w-3xl">
               <TextField
-                label={values.tripType === "return" ? "Departure date" : "Date"}
+                label={values.tripType === "multicity" ? "Date" : "Departure"}
                 type="date"
                 value={leg.date}
                 min={(i > 0 ? values.legs[i - 1].date : null) ?? today ?? undefined}
                 error={errorFor(`legs.${i}.date`)}
                 onChange={(d) => updateLeg(i, { date: d })}
               />
+              {values.tripType === "return" ? (
+                <>
+                  <div className="hidden pt-6 text-center sm:block">
+                    <p className="h-4 text-xs font-medium text-ink-muted">{tripLengthLabel(leg.date, values.returnDate)}</p>
+                    <FlightPath className="flight-path-live" />
+                  </div>
+                  <TextField label="Return" type="date" value={values.returnDate} min={leg.date ?? today ?? undefined} error={errorFor("returnDate")} onChange={(d) => update({ returnDate: d }, ["returnDate"])} />
+                </>
+              ) : (
+                <div className="hidden pt-6 sm:block">
+                  <p className="h-4" />
+                  <FlightPath className="flight-path-live" />
+                </div>
+              )}
             </div>
           </div>
         ))}
-
-        {values.tripType === "return" && (
-          <div className="grid gap-3 xl:grid-cols-[1fr_auto_1fr_11rem]">
-            <div className="hidden xl:col-span-3 xl:block" />
-            <TextField label="Return date" type="date" value={values.returnDate} min={values.legs[0].date ?? today ?? undefined} error={errorFor("returnDate")} onChange={(d) => update({ returnDate: d }, ["returnDate"])} />
-          </div>
-        )}
 
         {values.tripType === "multicity" && values.legs.length < MAX_SLICES && (
           <Button variant="secondary" icon={Plus} onClick={() => update({ legs: [...values.legs, emptyLeg(values.legs.at(-1)?.destination ?? null)] })}>

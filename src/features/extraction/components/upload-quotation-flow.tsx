@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PencilLine, RotateCcw, ScanText, X } from "lucide-react";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,12 @@ export function UploadQuotationFlow() {
     quotationStore.save(quotation);
     router.push(`/quotations/${quotation.id}`);
   };
+
+  // Next keeps this page's state when navigating away; returning must offer a new upload.
+  useEffect(() => () => {
+    setFile(null);
+    setRejection(null);
+  }, []);
 
   const startManually = () => {
     const quotation = createEmptyQuotation("manual");

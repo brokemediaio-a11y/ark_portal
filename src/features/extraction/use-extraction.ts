@@ -39,9 +39,11 @@ export function useExtraction() {
     setState({ status: "idle" });
   }, []);
 
+  // Also runs when the page is kept in the background on navigation, so coming back starts fresh.
   useEffect(() => () => {
     abortRef.current?.abort();
     clearTimers();
+    setState({ status: "idle" });
   }, []);
 
   const run = useCallback(async (file: File): Promise<SuccessResponse | null> => {

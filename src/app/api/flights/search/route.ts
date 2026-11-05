@@ -1,3 +1,4 @@
+import { limitOffers } from "@/features/flights/server/offer-limit";
 import { FlightProviderError, getFlightProvider } from "@/features/flights/server/providers";
 import { parseSearchRequest } from "@/features/flights/server/search-service";
 import type { FlightSearchResponse } from "@/features/flights/schema";
@@ -26,7 +27,8 @@ export async function POST(request: Request) {
       ok: true,
       provider: provider.info,
       offerRequestId,
-      offers,
+      offers: limitOffers(offers),
+      totalFound: offers.length,
       searchedAt: new Date().toISOString(),
     } satisfies FlightSearchResponse);
   } catch (error) {

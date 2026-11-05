@@ -1,19 +1,22 @@
 import "server-only";
-import type { AcceptedMimeType } from "@/config/upload";
 import type { ExtractErrorCode } from "../../schema";
 
-export type ExtractionInput =
-  | { kind: "text"; text: string }
-  | { kind: "file"; mimeType: AcceptedMimeType; base64: string; fileName: string };
+export interface DocumentImage {
+  mimeType: string;
+  base64: string;
+}
 
 /**
- * Any AI backend that turns a document into raw JSON. The result is untrusted
- * and is always schema-validated by the extraction service.
+ * Any AI backend that can read a document. `extract` returns raw JSON, which is
+ * untrusted and always schema-validated by the extraction service.
  */
 export interface ExtractionProvider {
   readonly name: string;
   readonly isDemo: boolean;
-  extract(input: ExtractionInput, signal: AbortSignal): Promise<unknown>;
+  /** Copies the text from page images, without interpreting it. */
+  transcribe(images: DocumentImage[], signal: AbortSignal): Promise<string>;
+  /** Turns a document's text into structured data. */
+  extract(documentText: string, signal: AbortSignal): Promise<unknown>;
 }
 
 /** An error whose message is safe to show to staff (no secrets, no raw provider output). */

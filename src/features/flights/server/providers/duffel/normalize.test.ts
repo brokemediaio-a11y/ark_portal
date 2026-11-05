@@ -76,14 +76,14 @@ describe("toOfferRequestBody", () => {
     });
   });
 
-  it("omits max_connections when any number of stops is allowed", () => {
+  it("asks for the maximum connections when any number of stops is allowed", () => {
     const body = toOfferRequestBody({
       slices: [{ origin: "MAN", destination: "KBL", departureDate: "2026-11-20" }],
       passengers: { adults: 1, childAges: [], infantAges: [] },
       cabinClass: "economy",
       maxConnections: null,
     });
-    expect(body).not.toHaveProperty("max_connections");
+    expect(body.max_connections).toBe(2);
   });
 });
 

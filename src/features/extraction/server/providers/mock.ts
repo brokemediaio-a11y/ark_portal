@@ -64,7 +64,10 @@ const DEMO_EXTRACTION: Extraction = {
 export const mockExtractionProvider: ExtractionProvider = {
   name: "mock",
   isDemo: true,
-  async extract(_input, signal) {
+  async transcribe() {
+    return "";
+  },
+  async extract(_text, signal) {
     await new Promise((resolve) => setTimeout(resolve, 1200));
     signal.throwIfAborted();
     return structuredClone(DEMO_EXTRACTION);

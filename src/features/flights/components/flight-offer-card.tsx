@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, Clock, Luggage, Plane, ShieldCheck } from "lucide-react";
+import { ChevronDown, Clock, Luggage, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,8 @@ import {
   stopsLabel,
 } from "../format";
 import type { FlightOffer, OfferSlice } from "../schema";
+import { AirlineLogo } from "./airline-logo";
+import { FlightPath } from "./flight-path";
 
 interface FlightOfferCardProps {
   offer: FlightOffer;
@@ -81,7 +83,8 @@ function SliceSummary({ slice, label }: { slice: OfferSlice; label: string }) {
   const arr = splitLocal(last.arrivingAt);
   const stops = sliceStops(slice.segments);
   const via = slice.segments.slice(0, -1).map((s) => s.destination.iata);
-  const airlines = [...new Set(slice.segments.map((s) => s.marketing.name ?? s.marketing.iata).filter(Boolean))];
+  const carriers = [...new Map(slice.segments.map((s) => [s.marketing.iata ?? s.marketing.name, s.marketing])).values()];
+  const airlines = carriers.map((c) => c.name ?? c.iata).filter(Boolean);
   const shift = dayShiftLabel(dep.date, arr.date);
 
   return (
@@ -96,15 +99,8 @@ function SliceSummary({ slice, label }: { slice: OfferSlice; label: string }) {
           <p className="text-xs font-medium text-ink-muted">{first.origin.iata}</p>
         </div>
         <div className="flex min-w-0 flex-1 flex-col items-center text-xs text-ink-muted">
-          <span>{formatDuration(slice.durationMinutes) ?? ""}</span>
-          <span className="my-1 flex w-full items-center">
-            <span className="h-px flex-1 bg-line" />
-            {via.map((code) => (
-              <span key={code} className="mx-0.5 size-1.5 rounded-full bg-warning" title={`Stop in ${code}`} />
-            ))}
-            <Plane size={13} className="mx-1 text-accent" aria-hidden />
-            <span className="h-px flex-1 bg-line" />
-          </span>
+          <span className="text-sm font-semibold text-ink">{formatDuration(slice.durationMinutes) ?? ""}</span>
+          <FlightPath stops={via} className="my-0.5" />
           <span className={cn("font-medium", stops === 0 ? "text-success-ink" : "text-warning-ink")}>
             {stopsLabel(stops)}
             {via.length > 0 && ` via ${via.join(", ")}`}
@@ -116,10 +112,14 @@ function SliceSummary({ slice, label }: { slice: OfferSlice; label: string }) {
             {shift && <sup className="ml-0.5 text-xs font-semibold text-warning-ink">{shift}</sup>}
           </p>
           <p className="text-xs font-medium text-ink-muted">{last.destination.iata}</p>
+          {shift && <p className="text-xs text-warning-ink">{dateLabel(arr.date)}</p>}
         </div>
-        <p className="hidden w-32 truncate text-xs text-ink-muted md:block" title={airlines.join(", ")}>
-          {airlines.join(", ")}
-        </p>
+        <div className="hidden w-32 items-center gap-2 md:flex" title={airlines.join(", ")}>
+          {carriers.slice(0, 2).map((c) => (
+            <AirlineLogo key={c.iata ?? c.name} code={c.iata} name={c.name} />
+          ))}
+          <p className="min-w-0 truncate text-xs text-ink-muted">{airlines.join(", ")}</p>
+        </div>
       </div>
     </div>
   );
@@ -150,7 +150,8 @@ function OfferDetails({ offer, sliceLabels }: { offer: FlightOffer; sliceLabels:
                         {dep.time} {seg.origin.iata} → {arr.time} {seg.destination.iata}
                         {dayShiftLabel(dep.date, arr.date) && <span className="ml-1 text-xs text-warning-ink">(arrives {dateLabel(arr.date)})</span>}
                       </p>
-                      <p className="text-ink-muted">
+                      <p className="flex items-center gap-2 text-ink-muted">
+                        <AirlineLogo code={seg.marketing.iata} name={seg.marketing.name} size={22} />
                         {[seg.marketing.name, flightNumberLabel(seg.marketing.iata, seg.marketing.flightNumber)].filter(Boolean).join(" · ")}
                       </p>
                     </div>

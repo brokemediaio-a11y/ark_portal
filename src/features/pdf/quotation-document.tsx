@@ -1,8 +1,12 @@
-import { Document, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+import { Document, G, Image, Page, Path, StyleSheet, Svg, Text, View } from "@react-pdf/renderer";
 import { brand } from "@/config/brand";
 import type { CustomerQuote, CustomerSegment } from "@/features/quotation/customer-view";
 
 const c = brand.colors;
+
+/** Drawn rather than typed, because the PDF's built-in font has no plane or arrow glyph. */
+const PLANE_PATH =
+  "M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z";
 
 const s = StyleSheet.create({
   page: { paddingTop: 36, paddingBottom: 64, paddingHorizontal: 40, fontSize: 10, fontFamily: "Helvetica", color: "#1A2633" },
@@ -15,27 +19,36 @@ const s = StyleSheet.create({
   tagline: { fontSize: 8.5, color: c.muted, marginTop: 2 },
   contact: { alignItems: "flex-end", fontSize: 8.5, color: c.muted, lineHeight: 1.5 },
 
-  titleRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", marginTop: 22, marginBottom: 14 },
+  titleRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", marginTop: 16, marginBottom: 10 },
   title: { fontSize: 20, fontFamily: "Helvetica-Bold", color: c.primary },
   route: { fontSize: 11, color: c.muted, marginTop: 4 },
-  metaGrid: { flexDirection: "row", backgroundColor: c.surface, borderRadius: 6, padding: 12, marginBottom: 18 },
+  metaGrid: { flexDirection: "row", backgroundColor: c.surface, borderRadius: 6, padding: 10, marginBottom: 12 },
   metaCell: { flex: 1 },
   metaLabel: { fontSize: 7.5, color: c.muted, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 3 },
   metaValue: { fontSize: 10, fontFamily: "Helvetica-Bold" },
 
   sectionTitle: { fontSize: 11, fontFamily: "Helvetica-Bold", color: c.primary, marginBottom: 8, marginTop: 4 },
-  segment: { borderWidth: 1, borderColor: c.border, borderRadius: 6, marginBottom: 10 },
-  segmentHead: { flexDirection: "row", justifyContent: "space-between", backgroundColor: c.surface, paddingVertical: 6, paddingHorizontal: 12, borderTopLeftRadius: 6, borderTopRightRadius: 6 },
-  segmentTitle: { fontFamily: "Helvetica-Bold", fontSize: 9.5 },
-  segmentFlight: { fontSize: 9.5, color: c.muted },
-  segmentBody: { flexDirection: "row", alignItems: "center", paddingVertical: 10, paddingHorizontal: 12 },
+  segment: { borderWidth: 1, borderColor: c.border, borderRadius: 6, marginBottom: 8 },
+  segmentHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: c.surface, paddingVertical: 7, paddingHorizontal: 12, borderTopLeftRadius: 6, borderTopRightRadius: 6 },
+  segmentTitle: { fontSize: 8.5, color: c.muted },
+  airline: { flexDirection: "row", alignItems: "center" },
+  airlineLogo: { width: 26, height: 26, objectFit: "contain", marginRight: 8 },
+  airlineBadge: { width: 26, height: 26, borderRadius: 4, backgroundColor: "#FFFFFF", justifyContent: "center", alignItems: "center", marginRight: 8 },
+  airlineBadgeText: { fontSize: 8.5, fontFamily: "Helvetica-Bold", color: c.primary },
+  airlineName: { fontFamily: "Helvetica-Bold", fontSize: 10.5, color: c.primary },
+  segmentFlight: { fontSize: 9, color: c.muted, marginTop: 1 },
+  segmentBody: { flexDirection: "row", alignItems: "center", paddingVertical: 8, paddingHorizontal: 12 },
   point: { flex: 1 },
   pointRight: { flex: 1, alignItems: "flex-end" },
   code: { fontSize: 18, fontFamily: "Helvetica-Bold", color: c.primary },
   placeName: { fontSize: 8.5, color: c.muted, marginTop: 1 },
   when: { fontSize: 9.5, marginTop: 4 },
-  arrow: { width: 70, alignItems: "center" },
-  arrowLine: { width: 56, height: 1.5, backgroundColor: c.accent },
+  routeBlock: { width: 120, alignItems: "center" },
+  duration: { fontSize: 10.5, fontFamily: "Helvetica-Bold", color: c.primary, marginBottom: 3 },
+  routeLine: { width: 104, height: 14, justifyContent: "center" },
+  arrowLine: { width: 104, height: 1.5, backgroundColor: c.accent },
+  routePlane: { position: "absolute", right: 0, top: 0, width: 14, height: 14 },
+  stops: { fontSize: 8, color: c.muted, marginTop: 3 },
   details: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 12, paddingBottom: 9 },
   detail: { fontSize: 8.5, color: c.muted, marginRight: 14 },
 
@@ -62,16 +75,50 @@ function Point({ point, align }: { point: CustomerSegment["from"]; align: "left"
   );
 }
 
-function Segment({ segment }: { segment: CustomerSegment }) {
+/** The line between the two airports: flight time above, a plane heading to the destination, stops below. */
+function Route({ segment }: { segment: CustomerSegment }) {
+  return (
+    <View style={s.routeBlock}>
+      {segment.duration && <Text style={s.duration}>{segment.duration}</Text>}
+      <View style={s.routeLine}>
+        <View style={s.arrowLine} />
+        <Svg viewBox="0 0 24 24" style={s.routePlane}>
+          <G transform="rotate(45 12 12)">
+            <Path d={PLANE_PATH} fill={c.accent} />
+          </G>
+        </Svg>
+      </View>
+      {segment.stops && <Text style={s.stops}>{segment.stops}</Text>}
+    </View>
+  );
+}
+
+function AirlineMark({ segment, src }: { segment: CustomerSegment; src: string | undefined }) {
+  // eslint-disable-next-line jsx-a11y/alt-text -- react-pdf Image has no alt
+  if (src) return <Image src={src} style={s.airlineLogo} />;
+  return (
+    <View style={s.airlineBadge}>
+      <Text style={s.airlineBadgeText}>{segment.airlineCode ?? "—"}</Text>
+    </View>
+  );
+}
+
+function Segment({ segment, logo }: { segment: CustomerSegment; logo: string | undefined }) {
   return (
     <View style={s.segment} wrap={false}>
       <View style={s.segmentHead}>
+        <View style={s.airline}>
+          <AirlineMark segment={segment} src={logo} />
+          <View>
+            <Text style={s.airlineName}>{segment.airlineName ?? segment.flightNumber ?? "Airline to be confirmed"}</Text>
+            {segment.airlineName && segment.flightNumber && <Text style={s.segmentFlight}>{segment.flightNumber}</Text>}
+          </View>
+        </View>
         <Text style={s.segmentTitle}>{segment.title}</Text>
-        {segment.flight && <Text style={s.segmentFlight}>{segment.flight}</Text>}
       </View>
       <View style={s.segmentBody}>
         <Point point={segment.from} align="left" />
-        <View style={s.arrow}><View style={s.arrowLine} /></View>
+        <Route segment={segment} />
         <Point point={segment.to} align="right" />
       </View>
       {segment.details.length > 0 && (
@@ -93,7 +140,7 @@ function Meta({ label, value }: { label: string; value: string | null }) {
 }
 
 /** Reusable A4 Ark Travelers quotation. Takes only the customer-facing view model. */
-export function QuotationDocument({ quote, logoSrc }: { quote: CustomerQuote; logoSrc?: string | null }) {
+export function QuotationDocument({ quote, logoSrc, airlineLogos = {} }: { quote: CustomerQuote; logoSrc?: string | null; airlineLogos?: Record<string, string> }) {
   return (
     <Document title={`Quotation ${quote.quoteNumber}`} author={brand.name} creator={brand.name} producer={brand.name}>
       <Page size="A4" style={s.page}>
@@ -134,7 +181,9 @@ export function QuotationDocument({ quote, logoSrc }: { quote: CustomerQuote; lo
         </View>
 
         <Text style={s.sectionTitle}>Itinerary</Text>
-        {quote.segments.map((segment, i) => <Segment key={i} segment={segment} />)}
+        {quote.segments.map((segment, i) => (
+          <Segment key={i} segment={segment} logo={segment.airlineCode ? airlineLogos[segment.airlineCode] : undefined} />
+        ))}
 
         <View style={s.priceBox} wrap={false}>
           <View>

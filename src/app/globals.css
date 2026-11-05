@@ -123,6 +123,18 @@ h1, h2 {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+  .flight-path .flight-path-plane { animation: none !important; }
+}
+
+/* The plane on a route line: rests mid-line, and flies when live or when its card is hovered. */
+.flight-path-plane { left: calc(50% - 7px); }
+.flight-path-live .flight-path-plane,
+article:hover .flight-path-plane { animation: fly-across 3.2s ease-in-out infinite; }
+@keyframes fly-across {
+  0% { left: 0; opacity: 0; }
+  12% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { left: calc(100% - 22px); opacity: 0; }
 }
 
 /* Hide number-input spinners: they invite accidental changes. */

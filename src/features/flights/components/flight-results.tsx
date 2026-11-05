@@ -1,11 +1,23 @@
 "use client";
 
-import { SearchX } from "lucide-react";
-import { useMemo, useState } from "react";
+import { SearchX, X } from "lucide-react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { SegmentedControl } from "@/components/ui/segmented-control";
+import { formatMoney } from "@/features/quotation/pricing";
 import { cn } from "@/lib/cn";
-import { offerAirlines, sliceStops } from "../format";
+import {
+  NO_FILTERS,
+  TIMES_OF_DAY,
+  filterOffers,
+  filterOptions,
+  isFiltered,
+  sortOffers,
+  type OfferFilters,
+  type SortKey,
+  type StopsFilter,
+  type TimeOfDay,
+} from "../results-filter";
 import type { FlightOffer } from "../schema";
 import { FlightOfferCard } from "./flight-offer-card";
 
@@ -16,53 +28,40 @@ const SORTS = [
   { value: "duration", label: "Fastest" },
   { value: "departure", label: "Earliest" },
 ] as const;
-type Sort = (typeof SORTS)[number]["value"];
 
-const STOP_FILTERS = [
-  { value: "any", label: "Any stops" },
+const STOP_OPTIONS: readonly { value: StopsFilter; label: string }[] = [
+  { value: "any", label: "Any" },
   { value: "0", label: "Direct" },
   { value: "1", label: "Up to 1 stop" },
-] as const;
-type StopFilter = (typeof STOP_FILTERS)[number]["value"];
+  { value: "2", label: "Up to 2 stops" },
+];
 
-const maxStops = (o: FlightOffer) => Math.max(...o.slices.map((s) => sliceStops(s.segments)));
-const totalMinutes = (o: FlightOffer) => o.slices.reduce((sum, s) => sum + (s.durationMinutes ?? 0), 0);
-
-const comparators: Record<Sort, (a: FlightOffer, b: FlightOffer) => number> = {
-  price: (a, b) => a.totalAmount - b.totalAmount || totalMinutes(a) - totalMinutes(b),
-  duration: (a, b) => totalMinutes(a) - totalMinutes(b) || a.totalAmount - b.totalAmount,
-  departure: (a, b) => a.slices[0].segments[0].departingAt.localeCompare(b.slices[0].segments[0].departingAt) || a.totalAmount - b.totalAmount,
-};
+const toggled = <T,>(list: readonly T[], item: T) => (list.includes(item) ? list.filter((x) => x !== item) : [...list, item]);
 
 interface FlightResultsProps {
   offers: FlightOffer[];
+  totalFound: number;
   sliceLabels: string[];
   busyOfferId: string | null;
   onSelect: (offer: FlightOffer) => void;
 }
 
-export function FlightResults({ offers, sliceLabels, busyOfferId, onSelect }: FlightResultsProps) {
-  const [sort, setSort] = useState<Sort>("price");
-  const [stops, setStops] = useState<StopFilter>("any");
-  const [airline, setAirline] = useState<string | null>(null);
+export function FlightResults({ offers, totalFound, sliceLabels, busyOfferId, onSelect }: FlightResultsProps) {
+  const [sort, setSort] = useState<SortKey>("price");
+  const [filters, setFilters] = useState<OfferFilters>(NO_FILTERS);
   const [visible, setVisible] = useState(PAGE_SIZE);
 
-  const airlines = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const name of offers.flatMap(offerAirlines)) counts.set(name, (counts.get(name) ?? 0) + 1);
-    return [...counts.entries()].sort((a, b) => b[1] - a[1]);
-  }, [offers]);
+  const options = useMemo(() => filterOptions(offers, filters), [offers, filters]);
+  const shown = useMemo(() => sortOffers(filterOffers(offers, filters), sort), [offers, filters, sort]);
 
-  const filtered = useMemo(
-    () =>
-      offers
-        .filter((o) => stops === "any" || maxStops(o) <= Number(stops))
-        .filter((o) => !airline || offerAirlines(o).includes(airline))
-        .sort(comparators[sort]),
-    [offers, stops, airline, sort],
-  );
-
-  const resetPaging = () => setVisible(PAGE_SIZE);
+  const changeFilters = (patch: Partial<OfferFilters>) => {
+    setFilters((f) => ({ ...f, ...patch }));
+    setVisible(PAGE_SIZE);
+  };
+  const clearFilters = () => {
+    setFilters(NO_FILTERS);
+    setVisible(PAGE_SIZE);
+  };
 
   if (offers.length === 0) {
     return (
@@ -77,32 +76,103 @@ export function FlightResults({ offers, sliceLabels, busyOfferId, onSelect }: Fl
     );
   }
 
+  const currency = offers[0].totalCurrency;
+  const priceFloor = Math.ceil(options.minPrice);
+  const priceCeiling = Math.ceil(options.maxPrice);
+
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-ink-muted">
-          <span className="font-semibold text-ink">{filtered.length}</span> of {offers.length} fares
-        </p>
-        <div className="flex flex-wrap gap-2">
-          <SegmentedControl label="Sort by" value={sort} options={SORTS} onChange={(s) => { setSort(s); resetPaging(); }} />
-          <SegmentedControl label="Stops" value={stops} options={STOP_FILTERS} onChange={(s) => { setStops(s); resetPaging(); }} />
+      <section aria-label="Filter results" className="space-y-4 rounded-2xl border border-line bg-white p-4 sm:p-5">
+        <div className="grid gap-4 lg:grid-cols-2">
+          <FilterGroup label="Stops">
+            {STOP_OPTIONS.map((o) => (
+              <Chip
+                key={o.value}
+                label={o.label}
+                count={options.stops[o.value]}
+                active={filters.stops === o.value}
+                onClick={() => changeFilters({ stops: o.value })}
+              />
+            ))}
+          </FilterGroup>
+
+          <FilterGroup label="Departure time">
+            {TIMES_OF_DAY.map((t) => (
+              <Chip
+                key={t.value}
+                label={`${t.label} ${t.hours}`}
+                count={options.departure[t.value as TimeOfDay]}
+                active={filters.departure.includes(t.value)}
+                onClick={() => changeFilters({ departure: toggled(filters.departure, t.value) })}
+              />
+            ))}
+          </FilterGroup>
         </div>
+
+        {options.airlines.length > 1 && (
+          <FilterGroup label="Airlines">
+            {options.airlines.map((a) => (
+              <Chip
+                key={a.name}
+                label={a.name}
+                count={a.count}
+                active={filters.airlines.includes(a.name)}
+                onClick={() => changeFilters({ airlines: toggled(filters.airlines, a.name) })}
+              />
+            ))}
+          </FilterGroup>
+        )}
+
+        {priceCeiling > priceFloor && (
+          <div className="space-y-1.5 lg:max-w-md">
+            <label htmlFor="max-price" className="flex items-baseline justify-between text-sm font-medium text-ink">
+              Maximum price
+              <span className="tabular-nums text-ink-muted">{filters.maxPrice === null ? "Any price" : formatMoney(filters.maxPrice, currency)}</span>
+            </label>
+            <input
+              id="max-price"
+              type="range"
+              min={priceFloor}
+              max={priceCeiling}
+              step={1}
+              value={filters.maxPrice ?? priceCeiling}
+              onChange={(e) => {
+                const value = Number(e.target.value);
+                changeFilters({ maxPrice: value >= priceCeiling ? null : value });
+              }}
+              className="w-full cursor-pointer accent-brand"
+            />
+          </div>
+        )}
+      </section>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-ink-muted" aria-live="polite">
+          Showing <span className="font-semibold text-ink">{shown.length}</span> of {offers.length} fares
+          {isFiltered(filters) && (
+            <button type="button" onClick={clearFilters} className="ml-2 inline-flex cursor-pointer items-center gap-1 font-medium text-brand hover:underline">
+              <X size={14} aria-hidden /> Clear filters
+            </button>
+          )}
+        </p>
+        <SegmentedControl label="Sort by" value={sort} options={SORTS} onChange={(s) => { setSort(s); setVisible(PAGE_SIZE); }} />
       </div>
 
-      {airlines.length > 1 && (
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by airline">
-          <Chip active={airline === null} onClick={() => { setAirline(null); resetPaging(); }} label={`All airlines (${offers.length})`} />
-          {airlines.map(([name, count]) => (
-            <Chip key={name} active={airline === name} onClick={() => { setAirline(airline === name ? null : name); resetPaging(); }} label={`${name} (${count})`} />
-          ))}
-        </div>
+      {totalFound > offers.length && (
+        <p className="text-xs text-ink-muted">
+          The airlines returned {totalFound.toLocaleString("en-GB")} fares. These are the {offers.length} best: the cheapest of every airline and number of stops, then the cheapest overall.
+          To see others, search with a specific cabin or number of stops.
+        </p>
       )}
 
-      {filtered.length === 0 ? (
-        <p className="rounded-2xl border border-line bg-white p-6 text-center text-sm text-ink-muted">No fares match these filters.</p>
+      {shown.length === 0 ? (
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-line bg-white p-8 text-center">
+          <p className="text-sm text-ink-muted">No fares match these filters.</p>
+          <Button variant="secondary" size="sm" icon={X} onClick={clearFilters}>Clear filters</Button>
+        </div>
       ) : (
         <div className="space-y-3">
-          {filtered.slice(0, visible).map((offer) => (
+          {shown.slice(0, visible).map((offer) => (
             <FlightOfferCard
               key={offer.id}
               offer={offer}
@@ -115,10 +185,10 @@ export function FlightResults({ offers, sliceLabels, busyOfferId, onSelect }: Fl
         </div>
       )}
 
-      {filtered.length > visible && (
+      {shown.length > visible && (
         <div className="flex justify-center">
           <Button variant="secondary" onClick={() => setVisible((v) => v + PAGE_SIZE)}>
-            Show more fares ({filtered.length - visible} more)
+            Show more fares ({shown.length - visible} more)
           </Button>
         </div>
       )}
@@ -126,18 +196,29 @@ export function FlightResults({ offers, sliceLabels, busyOfferId, onSelect }: Fl
   );
 }
 
-function Chip({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
+function FilterGroup({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="space-y-1.5" role="group" aria-label={label}>
+      <p className="text-sm font-medium text-ink">{label}</p>
+      <div className="flex flex-wrap gap-2">{children}</div>
+    </div>
+  );
+}
+
+/** An option with how many fares it gives. An option with none can't be picked, so nothing looks broken. */
+function Chip({ active, onClick, label, count }: { active: boolean; onClick: () => void; label: string; count: number }) {
   return (
     <button
       type="button"
       aria-pressed={active}
       onClick={onClick}
+      disabled={count === 0 && !active}
       className={cn(
-        "cursor-pointer rounded-full border px-3 py-1 text-sm transition-colors",
-        active ? "border-brand bg-brand text-white" : "border-line bg-white text-ink-muted hover:border-brand/40 hover:text-ink",
+        "cursor-pointer rounded-full border px-3 py-1 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-45",
+        active ? "border-brand bg-brand text-white" : "border-line bg-white text-ink-muted enabled:hover:border-brand/40 enabled:hover:text-ink",
       )}
     >
-      {label}
+      {label} <span className={cn("tabular-nums", active ? "text-white/75" : "text-ink-faint")}>({count})</span>
     </button>
   );
 }

@@ -3,6 +3,8 @@ import type { RawOffer, RawPlace } from "./raw-schemas";
 
 /** Pure Duffel ↔ app conversions (no I/O), so they are fully unit-testable. */
 
+const DUFFEL_MAX_CONNECTIONS = 2;
+
 /** ISO 8601 duration ("P1DT5H30M", "PT7H10M") → minutes. */
 export function parseIsoDuration(value: string | null): number | null {
   if (!value) return null;
@@ -110,6 +112,7 @@ export function toOfferRequestBody(r: FlightSearchRequest) {
       ...r.passengers.infantAges.map((age) => ({ age })),
     ],
     cabin_class: r.cabinClass,
-    ...(r.maxConnections === null ? {} : { max_connections: r.maxConnections }),
+    // Duffel's documented default is 1, so "any number of stops" has to ask for its maximum.
+    max_connections: r.maxConnections ?? DUFFEL_MAX_CONNECTIONS,
   };
 }

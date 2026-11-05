@@ -26,6 +26,12 @@ export interface CustomerQuote {
 export interface CustomerSegment {
   title: string;
   flight: string | null;
+  airlineName: string | null;
+  /** Two-character airline code, used to find the logo. */
+  airlineCode: string | null;
+  flightNumber: string | null;
+  duration: string | null;
+  stops: string | null;
   from: { code: string | null; name: string | null; date: string | null; time: string | null };
   to: { code: string | null; name: string | null; date: string | null; time: string | null };
   details: string[];
@@ -60,20 +66,27 @@ function describeTravellers(p: Passengers): string | null {
 
 const place = (code: string | null, name: string | null) => code ?? name ?? "?";
 
+/** The airline's code, read from the flight number ("TK 1954") when it wasn't stated separately. */
+export function airlineCodeOf(s: Pick<FlightSegment, "airlineCode" | "flightNumber">): string | null {
+  if (s.airlineCode && /^[A-Z0-9]{2}$/.test(s.airlineCode)) return s.airlineCode;
+  const code = /^\s*([A-Za-z0-9]{2})[\s-]*\d/.exec(s.flightNumber ?? "")?.[1].toUpperCase();
+  return code && /[A-Z]/.test(code) ? code : null;
+}
+
 function toCustomerSegment(s: FlightSegment, index: number): CustomerSegment {
   // Show the code only when there's no name and the flight number doesn't already start with it.
   const codeInFlightNumber = Boolean(s.airlineCode && s.flightNumber?.toUpperCase().startsWith(s.airlineCode));
   const airline = s.airlineName ?? (codeInFlightNumber ? null : s.airlineCode);
-  const details = [
-    s.cabin,
-    s.duration && `Duration ${s.duration}`,
-    s.stops !== null && (s.stops === 0 ? "Non-stop" : `${s.stops} stop${s.stops > 1 ? "s" : ""}`),
-    s.baggage && `Baggage: ${s.baggage}`,
-  ].filter((v): v is string => Boolean(v));
+  const details = [s.cabin, s.baggage && `Baggage: ${s.baggage}`].filter((v): v is string => Boolean(v));
 
   return {
     title: `Flight ${index + 1}`,
     flight: [airline, s.flightNumber].filter(Boolean).join(" · ") || null,
+    airlineName: s.airlineName,
+    airlineCode: airlineCodeOf(s),
+    flightNumber: s.flightNumber,
+    duration: s.duration,
+    stops: s.stops === null ? null : s.stops === 0 ? "Non-stop" : `${s.stops} stop${s.stops > 1 ? "s" : ""}`,
     from: { code: s.originCode, name: s.originName, date: formatIsoDate(s.departureDate), time: s.departureTime },
     to: { code: s.destinationCode, name: s.destinationName, date: formatIsoDate(s.arrivalDate), time: s.arrivalTime },
     details,
@@ -121,7 +134,7 @@ export function buildShareMessage(view: CustomerQuote): string {
     "",
     `Route: ${view.routeSummary}`,
     ...view.segments.map(
-      (s) => `• ${s.from.date ?? ""} ${s.from.time ?? ""} ${s.from.code ?? s.from.name ?? ""} → ${s.to.code ?? s.to.name ?? ""}${s.flight ? ` (${s.flight})` : ""}`.replace(/\s+/g, " "),
+      (s) => `• ${s.from.date ?? ""} ${s.from.time ?? ""} ${s.from.code ?? s.from.name ?? ""} → ${s.to.code ?? s.to.name ?? ""}${s.flight ? ` (${s.flight})` : ""}${s.duration ? `, ${s.duration}` : ""}`.replace(/\s+/g, " "),
     ),
     view.travellers ? `Travellers: ${view.travellers}` : null,
     `Total price: ${view.totalPrice}`,

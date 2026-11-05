@@ -69,12 +69,14 @@ A web app that helps Ark Travelers staff turn supplier flight quotations (PDFs, 
 2. **Extraction** (server-side, `POST /api/quotations/extract`):
    - The file is checked for size, extension and its real content type (magic bytes). It is processed in memory and never stored.
    - **PDFs with a text layer:** the text is read locally (`unpdf`) and sent to the AI as text. This is cheaper and more exact.
-   - **Scanned PDFs and images:** the file goes to a vision model, which acts as OCR.
+   - **Image-only PDFs, scans and screenshots:** pages are rendered at high resolution (`@napi-rs/canvas`) and cut into overlapping slices, because a vision API shrinks a whole page until small print is unreadable and the model starts inventing values. The slices are transcribed twice, cut differently each time, and both transcripts go to the structuring step.
    - The AI must answer in a strict JSON schema in which every field is nullable. It is told never to guess, and to list uncertain fields along with evidence.
    - The response is validated with Zod. Badly formatted values (for example `"10 Dec"` as a date) are dropped and flagged rather than guessed.
    - Code-level safeguards cover cheaper models that don't always follow instructions:
-     - **Text PDFs:** any name or label the AI returns that doesn't appear in the document is removed. For example, it won't turn "QR" into "Qatar Airways".
-     - **Dates with no year:** the year is set to the next upcoming occurrence and flagged for staff to confirm.
+     - **Only what is printed:** every value is checked against the document's text (`source-match.ts`). Flight numbers must match digit for digit, and times must match including AM/PM. Critical values that aren't printed are removed and flagged; invented names, baggage, stops, travellers, currency and prices are removed.
+     - **Two readings:** on scans, a critical value missing from either reading is flagged for staff to compare.
+     - **Itinerary rules:** repeated flights are merged. A connection that departs before the previous flight lands, or a flight number reused on another route, is flagged.
+     - **Dates with no year:** the year is set to the next upcoming occurrence and flagged for staff to confirm, once per year. A printed year is never changed.
      - **Past departure dates:** a departure date in the past blocks sending.
 3. **Review.** Staff check the flights in an editable form:
    - 🔴 **Red** fields must be fixed before the quotation can be sent.
@@ -111,6 +113,7 @@ To try the app **without an AI key**, set `EXTRACTION_PROVIDER=mock` in `.env.lo
 | `EXTRACTION_PROVIDER` | no | `openai` (default) or `mock` |
 | `OPENAI_API_KEY` | for `openai` | Server-side only |
 | `OPENAI_MODEL` | no | Default `gpt-4o`. Must support vision and structured outputs |
+| `OPENAI_VISION_MODEL` | no | Model that reads page images. Defaults to `OPENAI_MODEL`; set a stronger one here if scans are misread |
 | `OPENAI_BASE_URL` | no | Any OpenAI-compatible endpoint, e.g. Gemini or OpenRouter |
 | `FLIGHT_PROVIDER` | no | `duffel` (default) |
 | `DUFFEL_ENV` | no | `test` (default) or `live` |

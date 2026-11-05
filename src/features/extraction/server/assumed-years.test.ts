@@ -37,6 +37,13 @@ describe("resolveAssumedYears", () => {
   it("leaves flagged dates that are already upcoming", () => {
     const out = resolveAssumedYears(extraction([["2027-01-12", "2027-01-12"]], [0]), TODAY);
     expect(out.segments[0].departureDate).toBe("2027-01-12");
-    expect(out.uncertainFields[0].reason).toBe("year assumed");
+    expect(out.uncertainFields[0].reason).toContain("2027 was assumed");
+  });
+
+  it("asks staff to confirm once per assumed year, whatever the model flagged", () => {
+    const data = extraction([["2026-12-10", "2026-12-10"], ["2026-12-11", "2026-12-11"], ["2026-01-10", "2026-01-10"], ["2026-01-10", "2026-01-10"]], [0, 2]);
+    const out = resolveAssumedYears(data, TODAY, "DEC 10 | DEC 11 | JAN 10");
+    expect(out.segments.map((s) => s.departureDate)).toEqual(["2026-12-10", "2026-12-11", "2027-01-10", "2027-01-10"]);
+    expect(out.uncertainFields.map((f) => f.field)).toEqual(["segments.0.departureDate", "segments.2.departureDate"]);
   });
 });

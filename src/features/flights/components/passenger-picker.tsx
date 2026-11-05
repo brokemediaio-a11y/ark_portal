@@ -3,6 +3,7 @@
 import { Plus, X } from "lucide-react";
 import { NumberField } from "@/components/ui/form-field";
 import { cn } from "@/lib/cn";
+import { MIN_ADULTS } from "../schema";
 
 export interface PassengerValues {
   adults: number;
@@ -30,7 +31,13 @@ export function PassengerPicker({ value, onChange, error }: PassengerPickerProps
     <fieldset className="space-y-3">
       <legend className="text-sm font-medium text-ink">Travellers</legend>
       <div className="grid gap-4 sm:grid-cols-[8rem_1fr_1fr]">
-        <NumberField label="Adults (18+)" integer min={1} value={value.adults} onChange={(v) => onChange({ ...value, adults: Math.max(1, v ?? 1) })} />
+        <NumberField
+          label="Adults (18+)"
+          integer
+          min={MIN_ADULTS}
+          value={value.adults}
+          onChange={(v) => onChange({ ...value, adults: Math.max(MIN_ADULTS, v ?? MIN_ADULTS) })}
+        />
         <AgeList
           label="Children (2–17)"
           addLabel="Add child"
@@ -48,6 +55,11 @@ export function PassengerPicker({ value, onChange, error }: PassengerPickerProps
           onChange={(ages) => setAges("infantAges", ages)}
         />
       </div>
+      {MIN_ADULTS > 0 && (
+        <p className="text-xs text-ink-muted">
+          Airline fares can only be searched with at least {MIN_ADULTS} adult. Searches for children alone aren&apos;t available from our flight provider.
+        </p>
+      )}
       {error && <p className="text-xs text-danger-ink">{error}</p>}
     </fieldset>
   );

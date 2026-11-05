@@ -22,6 +22,7 @@ export function getExtractionProvider(env: NodeJS.ProcessEnv = process.env): Ext
     return createOpenAIProvider({
       apiKey,
       model: env.OPENAI_MODEL || DEFAULT_OPENAI_MODEL,
+      visionModel: env.OPENAI_VISION_MODEL || env.OPENAI_MODEL || DEFAULT_OPENAI_MODEL,
       baseURL: env.OPENAI_BASE_URL || undefined,
     });
   }
@@ -30,4 +31,4 @@ export function getExtractionProvider(env: NodeJS.ProcessEnv = process.env): Ext
 }
 
 export { ExtractionError } from "./types";
-export type { ExtractionInput, ExtractionProvider } from "./types";
+export type { DocumentImage, ExtractionProvider } from "./types";

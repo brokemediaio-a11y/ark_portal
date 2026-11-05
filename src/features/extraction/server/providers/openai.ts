@@ -4,29 +4,29 @@ import OpenAI from "openai";
 import { zodResponseFormat } from "openai/helpers/zod";
 import type { ChatCompletionContentPart } from "openai/resources/chat/completions";
 import { extractionSchema } from "../../schema";
-import { buildExtractionSystemPrompt, EXTRACTION_USER_INSTRUCTION } from "../prompt";
-import { ExtractionError, type ExtractionInput, type ExtractionProvider } from "./types";
+import { buildExtractionSystemPrompt, EXTRACTION_USER_INSTRUCTION, TRANSCRIPTION_SYSTEM_PROMPT, TRANSCRIPTION_USER_INSTRUCTION } from "../prompt";
+import { ExtractionError, type ExtractionProvider } from "./types";
 
 interface OpenAIProviderOptions {
   apiKey: string;
   model: string;
+  /** Model that reads page images; can be stronger than the one that structures text. */
+  visionModel: string;
   /** Any OpenAI-compatible endpoint (e.g. Gemini, OpenRouter) can be used via a base URL. */
   baseURL?: string;
 }
 
-function toContent(input: ExtractionInput): ChatCompletionContentPart[] {
-  const instruction: ChatCompletionContentPart = { type: "text", text: EXTRACTION_USER_INSTRUCTION };
-  if (input.kind === "text") {
-    return [
-      instruction,
-      { type: "text", text: `<supplier_document>\n${input.text}\n</supplier_document>` },
-    ];
+/** Maps OpenAI's failures onto messages staff can act on; anything else is rethrown as is. */
+function toExtractionError(error: unknown): unknown {
+  if (error instanceof ExtractionError) return error;
+  // OpenAI also uses 429 when the account is out of credit — that is not a "try again" situation.
+  if (error instanceof OpenAI.RateLimitError && (error.type === "insufficient_quota" || error.code === "insufficient_quota" || error.code === "credit_balance_exhausted")) {
+    console.error("[extract] OpenAI account has no remaining credit");
+    return new ExtractionError("not_configured", "The AI account has run out of credit, so automatic reading is unavailable. Please ask your administrator to top it up, or enter the details manually.", 503);
   }
-  const dataUrl = `data:${input.mimeType};base64,${input.base64}`;
-  if (input.mimeType === "application/pdf") {
-    return [instruction, { type: "file", file: { filename: "supplier.pdf", file_data: dataUrl } }];
-  }
-  return [instruction, { type: "image_url", image_url: { url: dataUrl, detail: "high" } }];
+  if (error instanceof OpenAI.RateLimitError) return new ExtractionError("rate_limited", "The AI service is busy. Please try again in a minute.", 429);
+  if (error instanceof OpenAI.AuthenticationError) return new ExtractionError("not_configured", "AI extraction is not set up correctly. Please contact your administrator.", 503);
+  return error;
 }
 
 export function createOpenAIProvider(options: OpenAIProviderOptions): ExtractionProvider {
@@ -35,7 +35,36 @@ export function createOpenAIProvider(options: OpenAIProviderOptions): Extraction
   return {
     name: `openai:${options.model}`,
     isDemo: false,
-    async extract(input, signal) {
+    async transcribe(images, signal) {
+      try {
+        const completion = await client.chat.completions.create(
+          {
+            model: options.visionModel,
+            temperature: 0,
+            messages: [
+              { role: "system", content: TRANSCRIPTION_SYSTEM_PROMPT },
+              {
+                role: "user",
+                content: [
+                  { type: "text", text: TRANSCRIPTION_USER_INSTRUCTION },
+                  ...images.map((image): ChatCompletionContentPart => ({
+                    type: "image_url",
+                    image_url: { url: `data:${image.mimeType};base64,${image.base64}`, detail: "high" },
+                  })),
+                ],
+              },
+            ],
+          },
+          { signal },
+        );
+        const message = completion.choices[0]?.message;
+        if (message?.refusal) throw new ExtractionError("ai_failed", "The AI could not read this document.");
+        return message?.content ?? "";
+      } catch (error) {
+        throw toExtractionError(error);
+      }
+    },
+    async extract(documentText, signal) {
       try {
         const completion = await client.chat.completions.create(
           {
@@ -44,7 +73,13 @@ export function createOpenAIProvider(options: OpenAIProviderOptions): Extraction
             response_format: zodResponseFormat(extractionSchema, "flight_quotation"),
             messages: [
               { role: "system", content: buildExtractionSystemPrompt(localToday()) },
-              { role: "user", content: toContent(input) },
+              {
+                role: "user",
+                content: [
+                  { type: "text", text: EXTRACTION_USER_INSTRUCTION },
+                  { type: "text", text: `<supplier_document>\n${documentText}\n</supplier_document>` },
+                ],
+              },
             ],
           },
           { signal },
@@ -54,17 +89,7 @@ export function createOpenAIProvider(options: OpenAIProviderOptions): Extraction
           throw new ExtractionError("ai_failed", "The AI could not read this document.");
         return JSON.parse(message.content);
       } catch (error) {
-        if (error instanceof ExtractionError) throw error;
-        // OpenAI also uses 429 when the account is out of credit — that is not a "try again" situation.
-        if (error instanceof OpenAI.RateLimitError && (error.type === "insufficient_quota" || error.code === "insufficient_quota" || error.code === "credit_balance_exhausted")) {
-          console.error("[extract] OpenAI account has no remaining credit");
-          throw new ExtractionError("not_configured", "The AI account has run out of credit, so automatic reading is unavailable. Please ask your administrator to top it up, or enter the details manually.", 503);
-        }
-        if (error instanceof OpenAI.RateLimitError)
-          throw new ExtractionError("rate_limited", "The AI service is busy. Please try again in a minute.", 429);
-        if (error instanceof OpenAI.AuthenticationError)
-          throw new ExtractionError("not_configured", "AI extraction is not set up correctly. Please contact your administrator.", 503);
-        throw error;
+        throw toExtractionError(error);
       }
     },
   };

@@ -13,6 +13,12 @@ export type CabinClass = (typeof CABIN_CLASSES)[number];
 
 export const MAX_SLICES = 4;
 export const MAX_PASSENGERS = 9;
+/**
+ * Duffel rejects searches without an adult ("must include at least one adult
+ * passenger", checked against the live API). If a provider allows it, set this to
+ * 0: the form, its hint and the server validation all follow this value.
+ */
+export const MIN_ADULTS = 1;
 
 export const flightSearchRequestSchema = z
   .object({
@@ -27,7 +33,7 @@ export const flightSearchRequestSchema = z
       .min(1)
       .max(MAX_SLICES),
     passengers: z.object({
-      adults: z.number().int().min(1, "At least one adult is required"),
+      adults: z.number().int().min(MIN_ADULTS, `At least ${MIN_ADULTS} adult is required`),
       /** Ages 2–17, one entry per child. */
       childAges: z.array(z.number().int().min(2).max(17)),
       /** Ages 0–1, one entry per infant (each travels on an adult's lap). */
@@ -45,6 +51,7 @@ export const flightSearchRequestSchema = z
         ctx.addIssue({ code: "custom", message: "Dates must be in travel order", path: ["slices", i, "departureDate"] });
     });
     const total = r.passengers.adults + r.passengers.childAges.length + r.passengers.infantAges.length;
+    if (total === 0) ctx.addIssue({ code: "custom", message: "Add at least one traveller", path: ["passengers"] });
     if (total > MAX_PASSENGERS)
       ctx.addIssue({ code: "custom", message: `At most ${MAX_PASSENGERS} travellers per search`, path: ["passengers"] });
     if (r.passengers.infantAges.length > r.passengers.adults)
@@ -146,7 +153,8 @@ export type FlightSearchErrorCode =
   | "timeout";
 
 export type FlightSearchResponse =
-  | { ok: true; provider: ProviderInfo; offerRequestId: string; offers: FlightOffer[]; searchedAt: string }
+  /** `offers` is capped on busy routes; `totalFound` is how many the provider returned. */
+  | { ok: true; provider: ProviderInfo; offerRequestId: string; offers: FlightOffer[]; totalFound: number; searchedAt: string }
   | { ok: false; error: string; code: FlightSearchErrorCode; field?: string };
 
 export type OfferResponse =

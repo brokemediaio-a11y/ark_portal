@@ -3,6 +3,8 @@
 import { ArrowDown, ArrowRight, ArrowUp, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NumberField, TextField } from "@/components/ui/form-field";
+import { AirlineLogo } from "@/features/flights/components/airline-logo";
+import { airlineCodeOf } from "../customer-view";
 import { SEGMENT_FIELD_LABELS, segmentField } from "../review";
 import type { FlightSegment } from "../schema";
 
@@ -45,9 +47,11 @@ export function SegmentCard({ segment, index, total, onChange, onMove, onRemove 
       <header className="flex flex-wrap items-center gap-3 border-b border-line px-4 py-3 sm:px-5">
         <span className="grid size-8 place-items-center rounded-full bg-brand text-sm font-semibold text-white">{index + 1}</span>
         <h3 className="flex min-w-0 flex-1 items-center gap-2 font-semibold text-ink">
+          <AirlineLogo code={airlineCodeOf(segment)} name={segment.airlineName} />
           <span className="truncate">{from || "From ?"}</span>
           <ArrowRight size={16} className="shrink-0 text-accent" aria-hidden />
           <span className="truncate">{to || "To ?"}</span>
+          {segment.duration && <span className="shrink-0 text-sm font-medium text-ink-muted">· {segment.duration}</span>}
         </h3>
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="sm" icon={ArrowUp} aria-label="Move flight up" title="Move up" disabled={index === 0} onClick={() => onMove(-1)} />

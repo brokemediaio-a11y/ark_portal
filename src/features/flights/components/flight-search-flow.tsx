@@ -101,7 +101,10 @@ export function FlightSearchFlow() {
           />
 
           <FlightResults
+            // A new search starts with fresh filters: old ones could hide every new result.
+            key={result.offerRequestId}
             offers={result.offers}
+            totalFound={result.totalFound}
             sliceLabels={sliceLabels}
             busyOfferId={busyOfferId}
             onSelect={(offer) => selection.select(offer)}
