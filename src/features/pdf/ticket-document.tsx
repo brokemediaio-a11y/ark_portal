@@ -1,19 +1,19 @@
 import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import { brand } from "@/config/brand";
 import type { CustomerTicket } from "@/features/ticket/ticket-view";
-import { BrandFooter, BrandHeader, scriptFont } from "./brand-frame";
+import { BrandClosing, BrandHeader, scriptFont } from "./brand-frame";
 import { BulletList, FlightCard, Meta, Paragraph, pdfStyles } from "./itinerary";
 
 const c = brand.colors;
 
 const s = StyleSheet.create({
-  table: { borderWidth: 1, borderColor: c.border, borderRadius: 6, marginBottom: 12 },
-  row: { flexDirection: "row", paddingVertical: 6, paddingHorizontal: 10, borderTopWidth: 1, borderTopColor: c.border },
-  headRow: { flexDirection: "row", paddingVertical: 5, paddingHorizontal: 10, backgroundColor: c.surface, borderBottomWidth: 2, borderBottomColor: c.primary, borderTopLeftRadius: 6, borderTopRightRadius: 6 },
-  head: { fontSize: 7.5, color: c.muted, textTransform: "uppercase", letterSpacing: 0.5 },
-  name: { flex: 3, fontFamily: "Helvetica-Bold", fontSize: 10 },
-  cell: { flex: 1.4, fontSize: 9.5 },
-  number: { flex: 2.2, fontSize: 10, fontFamily: "Helvetica-Bold" },
+  table: { borderWidth: 0.75, borderColor: c.border, borderRadius: 5, marginBottom: 12 },
+  row: { flexDirection: "row", paddingVertical: 5, paddingHorizontal: 10, borderTopWidth: 0.5, borderTopColor: c.border },
+  headRow: { flexDirection: "row", paddingVertical: 4, paddingHorizontal: 10, backgroundColor: c.surface, borderBottomWidth: 0.75, borderBottomColor: c.primary, borderTopLeftRadius: 5, borderTopRightRadius: 5 },
+  head: { fontSize: 6, color: c.muted, textTransform: "uppercase", letterSpacing: 1.1 },
+  name: { flex: 3, fontFamily: "Helvetica-Bold", fontSize: 8 },
+  cell: { flex: 1.4, fontSize: 7.5 },
+  number: { flex: 2.2, fontSize: 8, fontFamily: "Helvetica-Bold", letterSpacing: 0.3 },
 });
 
 function Passengers({ passengers }: { passengers: CustomerTicket["passengers"] }) {
@@ -77,7 +77,7 @@ export function TicketDocument({ ticket, logoSrc = null, airlineLogos = {} }: Ti
         <Paragraph title="Notes" text={ticket.notes} />
         <BulletList title="Important information" items={ticket.terms} />
 
-        <BrandFooter reference={ticket.bookingReference ? `${ticket.ticketRef} · PNR ${ticket.bookingReference}` : ticket.ticketRef} warning={ticket.watermark} />
+        <BrandClosing logoSrc={logoSrc} reference={ticket.bookingReference ? `${ticket.ticketRef} · PNR ${ticket.bookingReference}` : ticket.ticketRef} />
       </Page>
     </Document>
   );

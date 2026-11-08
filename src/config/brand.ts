@@ -26,10 +26,16 @@ export const brand = {
   contact: {
     phones: ["+46 700 101 401", "+4915 25 71 11 901"],
     email: "info@arktravelers.com",
-    website: "arktravelers.com",
+    website: "www.arktravelers.com",
+    websiteUrl: "https://www.arktravelers.com",
     /** As printed on Ark Travelers' existing e-tickets. */
     address: "Kopparbacken 11, Spånga, Stockholm, Sweden",
   },
+  /** Shown with icons and clickable links in the closing footer of every PDF. */
+  social: [
+    { network: "facebook", label: "Ark Travelers AB", url: "https://www.facebook.com/share/1E2TPstWMd/" },
+    { network: "instagram", label: "@arktravelersab", url: "https://www.instagram.com/arktravelersab?dlrf=N3lndml6NjVzYzho" },
+  ],
   /** Number of days a quotation is shown as valid. Placeholder policy. */
   quoteValidityDays: 3,
   quoteNumberPrefix: "ARK",

@@ -1,16 +1,16 @@
 import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import { brand } from "@/config/brand";
 import type { CustomerQuote } from "@/features/quotation/customer-view";
-import { BrandFooter, BrandHeader } from "./brand-frame";
+import { BrandClosing, BrandHeader } from "./brand-frame";
 import { BulletList, FlightCard, Meta, Paragraph, pdfStyles } from "./itinerary";
 
 const c = brand.colors;
 
 const s = StyleSheet.create({
-  priceBox: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: c.primary, borderRadius: 6, paddingVertical: 14, paddingHorizontal: 16, marginTop: 8, marginBottom: 18 },
-  priceLabel: { color: c.ink, fontSize: 10, fontFamily: "Helvetica-Bold" },
-  priceSub: { color: c.ink, fontSize: 8, marginTop: 2 },
-  priceValue: { color: c.ink, fontSize: 20, fontFamily: "Helvetica-Bold" },
+  priceBox: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: c.primary, borderRadius: 5, paddingVertical: 10, paddingHorizontal: 14, marginTop: 6, marginBottom: 14 },
+  priceLabel: { color: c.ink, fontSize: 6.5, fontFamily: "Helvetica-Bold", textTransform: "uppercase", letterSpacing: 1.4 },
+  priceSub: { color: c.ink, fontSize: 7, marginTop: 2 },
+  priceValue: { color: c.ink, fontSize: 15, fontFamily: "Helvetica-Bold", letterSpacing: 0.3 },
 });
 
 interface QuotationDocumentProps {
@@ -58,7 +58,7 @@ export function QuotationDocument({ quote, logoSrc = null, airlineLogos = {} }: 
         <Paragraph title="Fare conditions" text={quote.fareConditions} />
         <BulletList title="Terms" items={quote.terms} />
 
-        <BrandFooter reference={quote.quoteNumber} warning={quote.watermark} />
+        <BrandClosing logoSrc={logoSrc} reference={quote.watermark ? `${quote.quoteNumber} · ${quote.watermark}` : quote.quoteNumber} />
       </Page>
     </Document>
   );
