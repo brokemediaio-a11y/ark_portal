@@ -1,7 +1,8 @@
 import "server-only";
-import type { Extraction, ExtractedSegment } from "../schema";
+import type { Extraction, ExtractedSegment, UncertainField as Flag } from "../schema";
 import {
   amountInSource,
+  codeInSource,
   currencyInSource,
   dateInSource,
   durationInSource,
@@ -12,30 +13,30 @@ import {
   timeInSource,
 } from "./source-match";
 
-type Flag = Extraction["uncertainFields"][number];
-
-const notPrinted = (field: string, value: string): Flag => ({
+export const notPrinted = (field: string, value: string): Flag => ({
   field,
   reason: `The AI returned "${value}", but this isn't printed in the document, so it was removed. Please check the original.`,
   evidence: value,
 });
 
 /** Removes everything from one flight that the document doesn't print, flagging what staff must check. */
-function groundSegment(segment: ExtractedSegment, index: number, source: string, flags: Flag[]): ExtractedSegment {
+export function groundSegment<S extends ExtractedSegment>(segment: S, index: number, source: string, flags: Flag[]): S {
   const path = (key: string) => `segments.${index}.${key}`;
   const out = { ...segment };
 
-  // Critical values: a wrong one is worse than an empty one.
-  const required = (key: "flightNumber" | "originCode" | "destinationCode" | "departureTime" | "arrivalTime", found: (value: string, text: string) => boolean) => {
+  // Critical values: a wrong one is worse than an empty one. An unprinted airport code
+  // needs no warning when the airport's name is printed, since the name is shown instead.
+  const required = (key: "flightNumber" | "originCode" | "destinationCode" | "departureTime" | "arrivalTime", found: (value: string, text: string) => boolean, quietIf = false) => {
     const value = segment[key];
     if (value && !found(value, source)) {
       out[key] = null;
-      flags.push(notPrinted(path(key), value));
+      if (!quietIf) flags.push(notPrinted(path(key), value));
     }
   };
+  const named = (name: string | null) => Boolean(name && textInSource(name, source));
   required("flightNumber", flightNumberInSource);
-  required("originCode", textInSource);
-  required("destinationCode", textInSource);
+  required("originCode", codeInSource, named(segment.originName));
+  required("destinationCode", codeInSource, named(segment.destinationName));
   required("departureTime", timeInSource);
   required("arrivalTime", timeInSource);
 
@@ -53,6 +54,8 @@ function groundSegment(segment: ExtractedSegment, index: number, source: string,
   }
   if (segment.duration && !durationInSource(segment.duration, source)) out.duration = null;
   if (segment.stops !== null && !mentionsStops(source)) out.stops = null;
+  // A printed code ("RQ") is not the airline's name.
+  if (out.airlineName && out.airlineName.toUpperCase() === segment.airlineCode?.toUpperCase()) out.airlineName = null;
 
   return out;
 }

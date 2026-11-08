@@ -1,6 +1,7 @@
-import { ArrowRight, ClipboardCheck, Download, FileInput, FilePlus2, Search } from "lucide-react";
+import { ArrowRight, ClipboardCheck, Download, FileInput, FilePlus2, Search, TicketCheck } from "lucide-react";
 import Link from "next/link";
 import { RecentQuotations } from "@/features/quotation/components/recent-quotations";
+import { RecentTickets } from "@/features/ticket/components/recent-tickets";
 
 const CHOICES = [
   {
@@ -16,6 +17,13 @@ const CHOICES = [
     title: "I need to find flights",
     text: "Search airline fares for a route and dates, pick one, and turn it into a quotation.",
     action: "Search flights",
+  },
+  {
+    href: "/tickets/new",
+    icon: TicketCheck,
+    title: "I have a ticket from a supplier",
+    text: "Upload the airline's e-ticket in any format. We turn it into an Ark Travelers e-ticket for the traveller.",
+    action: "Convert a ticket",
   },
 ];
 
@@ -61,8 +69,8 @@ export default function DashboardPage() {
           ))}
         </ol>
 
-        <h2 className="mt-12 text-lg font-bold text-brand">Start by adding the flights</h2>
-        <ul className="mt-4 grid gap-6 md:grid-cols-2">
+        <h2 className="mt-12 text-lg font-bold text-brand">Choose what you have</h2>
+        <ul className="mt-4 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {CHOICES.map(({ href, icon: Icon, title, text, action }) => (
             <li key={href}>
               <Link href={href} className="ticket group h-full">
@@ -87,7 +95,10 @@ export default function DashboardPage() {
         </ul>
       </section>
 
-      <RecentQuotations limit={5} />
+      <div className="grid gap-6 xl:grid-cols-2">
+        <RecentQuotations limit={5} />
+        <RecentTickets limit={5} />
+      </div>
     </div>
   );
 }

@@ -5,19 +5,26 @@ import type { DocumentImage } from "./providers";
 
 /** Renders PDF pages at about 180 dpi, so small print stays sharp. */
 const PDF_RENDER_SCALE = 2.5;
-const MAX_PDF_PAGES = 4;
-const MAX_SLICES_PER_READ = 12;
+/** Longer files are refused rather than partly read: a skipped page would silently lose a passenger. */
+export const MAX_PDF_PAGES = 8;
+const MAX_SLICES_PER_READ = 40;
 /** Slice height relative to width. Wide slices keep the most detail after the AI service resizes them. */
 const SLICE_ASPECT = 0.62;
 const SLICE_OVERLAP = 0.15;
 /** Rows lighter than this on every sampled pixel count as blank page. */
 const BLANK_THRESHOLD = 245;
 
+export class TooManyPagesError extends Error {
+  constructor(public readonly pages: number) {
+    super(`PDF has ${pages} pages`);
+  }
+}
+
 export async function renderPdfPages(bytes: Uint8Array): Promise<Uint8Array[]> {
   const pdf = await getDocumentProxy(new Uint8Array(bytes));
-  const count = Math.min(pdf.numPages, MAX_PDF_PAGES);
+  if (pdf.numPages > MAX_PDF_PAGES) throw new TooManyPagesError(pdf.numPages);
   const pages: Uint8Array[] = [];
-  for (let page = 1; page <= count; page++) {
+  for (let page = 1; page <= pdf.numPages; page++) {
     const png = await renderPageAsImage(new Uint8Array(bytes), page, {
       canvasImport: () => import("@napi-rs/canvas"),
       scale: PDF_RENDER_SCALE,

@@ -23,6 +23,14 @@ export interface CustomerQuote {
   terms: string[];
 }
 
+export interface CustomerPoint {
+  code: string | null;
+  name: string | null;
+  date: string | null;
+  time: string | null;
+  terminal: string | null;
+}
+
 export interface CustomerSegment {
   title: string;
   flight: string | null;
@@ -32,8 +40,8 @@ export interface CustomerSegment {
   flightNumber: string | null;
   duration: string | null;
   stops: string | null;
-  from: { code: string | null; name: string | null; date: string | null; time: string | null };
-  to: { code: string | null; name: string | null; date: string | null; time: string | null };
+  from: CustomerPoint;
+  to: CustomerPoint;
   details: string[];
 }
 
@@ -64,7 +72,12 @@ function describeTravellers(p: Passengers): string | null {
   return parts.length ? parts.join(", ") : null;
 }
 
-const place = (code: string | null, name: string | null) => code ?? name ?? "?";
+/** Code, or the place name up to its first comma ("STOCKHOLM ARLANDA, SWEDEN" → "STOCKHOLM ARLANDA"). */
+const place = (code: string | null, name: string | null) => code ?? name?.split(",")[0].trim() ?? "?";
+
+/** "9919" printed with carrier "RQ" reads as "RQ 9919". */
+export const flightLabel = (s: Pick<FlightSegment, "airlineCode" | "flightNumber">) =>
+  s.flightNumber && /^\d+$/.test(s.flightNumber.trim()) && s.airlineCode ? `${s.airlineCode} ${s.flightNumber.trim()}` : s.flightNumber;
 
 /** The airline's code, read from the flight number ("TK 1954") when it wasn't stated separately. */
 export function airlineCodeOf(s: Pick<FlightSegment, "airlineCode" | "flightNumber">): string | null {
@@ -73,7 +86,8 @@ export function airlineCodeOf(s: Pick<FlightSegment, "airlineCode" | "flightNumb
   return code && /[A-Z]/.test(code) ? code : null;
 }
 
-function toCustomerSegment(s: FlightSegment, index: number): CustomerSegment {
+/** One flight as the customer sees it; e-tickets add terminals and their own details. */
+export function toCustomerSegment(s: FlightSegment, index: number): CustomerSegment {
   // Show the code only when there's no name and the flight number doesn't already start with it.
   const codeInFlightNumber = Boolean(s.airlineCode && s.flightNumber?.toUpperCase().startsWith(s.airlineCode));
   const airline = s.airlineName ?? (codeInFlightNumber ? null : s.airlineCode);
@@ -81,16 +95,24 @@ function toCustomerSegment(s: FlightSegment, index: number): CustomerSegment {
 
   return {
     title: `Flight ${index + 1}`,
-    flight: [airline, s.flightNumber].filter(Boolean).join(" · ") || null,
+    flight: [airline, flightLabel(s)].filter(Boolean).join(" · ") || null,
     airlineName: s.airlineName,
     airlineCode: airlineCodeOf(s),
-    flightNumber: s.flightNumber,
+    flightNumber: flightLabel(s),
     duration: s.duration,
     stops: s.stops === null ? null : s.stops === 0 ? "Non-stop" : `${s.stops} stop${s.stops > 1 ? "s" : ""}`,
-    from: { code: s.originCode, name: s.originName, date: formatIsoDate(s.departureDate), time: s.departureTime },
-    to: { code: s.destinationCode, name: s.destinationName, date: formatIsoDate(s.arrivalDate), time: s.arrivalTime },
+    from: { code: s.originCode, name: s.originName, date: formatIsoDate(s.departureDate), time: s.departureTime, terminal: null },
+    to: { code: s.destinationCode, name: s.destinationName, date: formatIsoDate(s.arrivalDate), time: s.arrivalTime, terminal: null },
     details,
   };
+}
+
+/** "AMS – IST – KBL". En dash, not an arrow: the PDF's built-in font has no arrow glyph. */
+export function routeSummaryOf(segments: FlightSegment[]): string {
+  const stops = segments.map((s) => place(s.originCode, s.originName));
+  const last = segments.at(-1);
+  if (last) stops.push(place(last.destinationCode, last.destinationName));
+  return stops.filter((s, i) => s !== stops[i - 1]).join(" – ");
 }
 
 export function watermarkFor(q: Quotation): string | null {
@@ -104,9 +126,6 @@ export function buildCustomerQuote(q: Quotation, now = new Date(q.createdAt)): C
   const validUntil = new Date(now);
   validUntil.setDate(validUntil.getDate() + brand.quoteValidityDays);
 
-  const stops = q.segments.map((s) => place(s.originCode, s.originName));
-  const last = q.segments.at(-1);
-  if (last) stops.push(place(last.destinationCode, last.destinationName));
 
   return {
     watermark: watermarkFor(q),
@@ -116,8 +135,7 @@ export function buildCustomerQuote(q: Quotation, now = new Date(q.createdAt)): C
     customerName: q.customer.name,
     travellers: describeTravellers(q.passengers),
     segments: q.segments.map(toCustomerSegment),
-    // En dash, not an arrow: the PDF's built-in font has no arrow glyph.
-    routeSummary: stops.filter((s, i) => s !== stops[i - 1]).join(" – "),
+    routeSummary: routeSummaryOf(q.segments),
     totalPrice: formatMoney(price?.sellingTotal ?? null, q.currency),
     notes: q.notes,
     fareConditions: q.fareConditions,
@@ -143,7 +161,7 @@ export function buildShareMessage(view: CustomerQuote): string {
     "",
     `Kind regards,`,
     brand.name,
-    brand.contact.phone,
+    ...brand.contact.phones,
   ];
   return lines.filter((l): l is string => l !== null).join("\n");
 }

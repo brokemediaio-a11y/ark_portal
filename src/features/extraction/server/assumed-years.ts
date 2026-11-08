@@ -1,5 +1,5 @@
 import "server-only";
-import type { Extraction } from "../schema";
+import type { ItineraryExtraction, UncertainField } from "../schema";
 import { yearInSource } from "./source-match";
 
 const ISO = /^(\d{4})-(\d{2})-(\d{2})$/;
@@ -14,7 +14,7 @@ function nextOccurrence(date: string, today: string): string {
 
 const shiftYear = (date: string, years: number) => `${Number(date.slice(0, 4)) + years}${date.slice(4)}`;
 const yearAssumed = (year: string) => `The document doesn't show the year, so ${year} was assumed. Please confirm.`;
-const isYearFlag = (flag: Extraction["uncertainFields"][number]) => /\.(departure|arrival)Date$/.test(flag.field) && /\byear\b/i.test(flag.reason);
+const isYearFlag = (flag: UncertainField) => /\.(departure|arrival)Date$/.test(flag.field) && /\byear\b/i.test(flag.reason);
 
 /**
  * Supplier quotes often print dates without a year ("Fri 14 Mar"). Models are told to
@@ -28,7 +28,7 @@ const isYearFlag = (flag: Extraction["uncertainFields"][number]) => /\.(departur
  * four-flight itinerary doesn't bury the warnings that matter.
  * `source` is null when there is no document text (demo).
  */
-export function resolveAssumedYears(data: Extraction, today: string, source: string | null = null): Extraction {
+export function resolveAssumedYears<T extends ItineraryExtraction>(data: T, today: string, source: string | null = null): T {
   const modelFlagged = new Set(data.uncertainFields.filter(isYearFlag).map((f) => f.field));
   const uncertainFields = data.uncertainFields.filter((f) => !isYearFlag(f));
   const confirmedYears = new Set<string>();

@@ -31,7 +31,7 @@ const PREVIEW_STEP = 2;
 const stepForField = (field: string) =>
   field.startsWith("segments") || field.startsWith("passengers") || field === "fareConditions" ? 0 : 1;
 
-function focusField(field: string) {
+export function focusField(field: string) {
   // Wait for the step to render, then bring the field into view.
   requestAnimationFrame(() =>
     setTimeout(() => {
@@ -154,7 +154,7 @@ export function QuotationWorkspace({ initial }: { initial: Quotation }) {
   );
 }
 
-function SaveIndicator({ state }: { state: SaveState }) {
+export function SaveIndicator({ state }: { state: SaveState }) {
   if (state === "error")
     return <span className="flex items-center gap-1.5 text-sm text-danger-ink"><CloudOff size={16} /> Not saved</span>;
   if (state === "saving")

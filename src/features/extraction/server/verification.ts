@@ -1,34 +1,62 @@
 import "server-only";
-import type { ExtractedSegment, Extraction } from "../schema";
-import { amountInSource, dateInSource, flightNumberInSource, textInSource, timeInSource } from "./source-match";
+import type { ExtractedSegment, ItineraryExtraction, UncertainField as Flag } from "../schema";
+import { codeInSource, dateInSource, flightNumberInSource, flightNumberIndex, hasClockTime, hasDate, timeInSource } from "./source-match";
 
-type Flag = Extraction["uncertainFields"][number];
-
-const disagreement = (field: string, value: string): Flag => ({
+export const disagreement = (field: string, value: string): Flag => ({
   field,
   reason: `Two independent readings of the document don't agree on "${value}". Please compare it with the original.`,
   evidence: value,
 });
 
-/** Flags any critical value of a scanned document that isn't supported by both readings. */
-export function checkAgainstReads(data: Extraction, reads: readonly string[]): Extraction {
-  const inEveryRead = (found: (value: string, text: string) => boolean, value: string) => reads.every((read) => found(value, read));
+const FIRST_WINDOW_LOOKBACK = 250;
+
+/**
+ * The part of a reading that belongs to one flight: from the previous flight's
+ * number to the next one's. The whole reading when the flight number isn't found.
+ */
+function flightWindow(read: string, segments: readonly ExtractedSegment[], index: number): string {
+  const positions = segments.map((s) => (s.flightNumber ? flightNumberIndex(s.flightNumber, read) : -1));
+  const at = positions[index];
+  if (at < 0) return read;
+  // The first flight's window doesn't reach back into page headers and print stamps.
+  const start = Math.max(0, at - FIRST_WINDOW_LOOKBACK, ...positions.filter((p) => p >= 0 && p < at));
+  const end = Math.min(read.length, ...positions.filter((p) => p > at));
+  return read.slice(start, end);
+}
+
+/**
+ * Flags any critical value of a scanned document that a reading contradicts.
+ * A reading that has no time (or date) at all for that flight just missed the
+ * cell, which isn't a contradiction, so it is ignored for that value.
+ */
+export function checkAgainstReads<T extends ItineraryExtraction>(data: T, reads: readonly string[]): T {
   const flags: Flag[] = [];
   data.segments.forEach((s, i) => {
-    const check = (key: keyof ExtractedSegment, found: (value: string, text: string) => boolean) => {
+    const check = (key: keyof ExtractedSegment, found: (value: string, text: string) => boolean, kindPresent: (text: string) => boolean = () => true) => {
       const value = s[key];
-      if (typeof value === "string" && value && !inEveryRead(found, value)) flags.push(disagreement(`segments.${i}.${key}`, value));
+      if (typeof value !== "string" || !value) return;
+      const contradicted = reads.some((read) => {
+        const text = flightWindow(read, data.segments, i);
+        return kindPresent(text) && !found(value, text);
+      });
+      if (contradicted) flags.push(disagreement(`segments.${i}.${key}`, value));
     };
     check("flightNumber", flightNumberInSource);
-    check("originCode", textInSource);
-    check("destinationCode", textInSource);
-    check("departureDate", dateInSource);
-    check("departureTime", timeInSource);
-    check("arrivalDate", dateInSource);
-    check("arrivalTime", timeInSource);
+    check("originCode", codeInSource);
+    check("destinationCode", codeInSource);
+    check("departureDate", dateInSource, hasDate);
+    check("departureTime", timeInSource, hasClockTime);
+    check("arrivalDate", dateInSource, hasDate);
+    check("arrivalTime", timeInSource, hasClockTime);
   });
-  if (data.totalAmount !== null && !reads.every((read) => amountInSource(data.totalAmount!, read))) flags.push(disagreement("sourceTotal", String(data.totalAmount)));
-  return { ...data, uncertainFields: [...data.uncertainFields, ...flags] };
+  return withFlags(data, flags);
+}
+
+/** Adds flags, keeping one per field so staff aren't asked twice about the same value. */
+export function withFlags<T extends { uncertainFields: Flag[] }>(data: T, flags: Flag[]): T {
+  const seen = new Set<string>();
+  const uncertainFields = [...data.uncertainFields, ...flags].filter((f) => !seen.has(f.field) && seen.add(f.field));
+  return { ...data, uncertainFields };
 }
 
 const sameFlight = (a: ExtractedSegment, b: ExtractedSegment) =>
@@ -37,7 +65,7 @@ const sameFlight = (a: ExtractedSegment, b: ExtractedSegment) =>
 const localMoment = (date: string | null, time: string | null) => (date && time ? `${date}T${time.padStart(5, "0")}` : null);
 
 /** Page slices overlap, so a flight can be listed twice. Keeps the first, and keeps flags on the right flights. */
-export function mergeRepeatedFlights(data: Extraction): Extraction {
+export function mergeRepeatedFlights<T extends ItineraryExtraction>(data: T): T {
   const kept = data.segments.flatMap((s, i) => (data.segments.slice(0, i).some((earlier) => sameFlight(earlier, s)) ? [] : [i]));
   if (kept.length === data.segments.length) return data;
   const uncertainFields = data.uncertainFields.flatMap((flag) => {
@@ -50,7 +78,7 @@ export function mergeRepeatedFlights(data: Extraction): Extraction {
 }
 
 /** Rules any real itinerary obeys, whatever the document looks like. Run after years are resolved. */
-export function checkItinerary(data: Extraction): Extraction {
+export function checkItinerary<T extends ItineraryExtraction>(data: T): T {
   const { segments } = data;
   const flags: Flag[] = [];
 

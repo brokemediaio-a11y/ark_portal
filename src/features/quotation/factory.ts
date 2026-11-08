@@ -15,7 +15,7 @@ import {
   type SourceType,
 } from "./schema";
 
-const newId = () => crypto.randomUUID();
+export const newId = () => crypto.randomUUID();
 
 /** e.g. ARK-251025-4F7A — date + random suffix. Format to be confirmed by Ark Travelers. */
 export function generateQuoteNumber(now = new Date()): string {
@@ -77,13 +77,13 @@ export function createEmptyQuotation(sourceType: SourceType = "manual"): Quotati
 
 /* ---------- Mapping AI output → quotation (defensive: AI output is untrusted) ---------- */
 
-const clean = (v: string | null | undefined) => (typeof v === "string" && v.trim() ? v.trim() : null);
+export const clean = (v: string | null | undefined) => (typeof v === "string" && v.trim() ? v.trim() : null);
 
 /**
  * Keep a value only if it matches the expected format; otherwise drop it and
  * raise a review flag so staff see the original text instead of a silent guess.
  */
-function normalizeFormatted(
+export function normalizeFormatted(
   raw: string | null,
   pattern: RegExp,
   field: string,
@@ -98,10 +98,11 @@ function normalizeFormatted(
   return null;
 }
 
-const upper = (v: string) => v.toUpperCase().replace(/\s+/g, "");
+export const upper = (v: string) => v.toUpperCase().replace(/\s+/g, "");
 const padTime = (v: string) => v.replace(/^(\d):/, "0$1:");
 
-function mapSegment(s: ExtractedSegment, index: number, flags: ReviewFlag[]): FlightSegment {
+/** One extracted flight → editable flight. Badly formatted values are dropped and flagged. */
+export function segmentFromExtraction(s: ExtractedSegment, index: number, flags: ReviewFlag[]): FlightSegment {
   const f = (key: string) => `segments.${index}.${key}`;
   return {
     id: newId(),
@@ -139,7 +140,7 @@ export function quotationFromExtraction(
     reason: u.reason,
     evidence: clean(u.evidence),
   }));
-  const segments = extraction.segments.map((s, i) => mapSegment(s, i, flags));
+  const segments = extraction.segments.map((s, i) => segmentFromExtraction(s, i, flags));
 
   return {
     ...base,

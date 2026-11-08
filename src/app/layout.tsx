@@ -8,7 +8,7 @@ const publicSans = Public_Sans({ variable: "--font-public-sans", subsets: ["lati
 const manrope = Manrope({ variable: "--font-manrope", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: { default: `${brand.name} · Quotations`, template: `%s · ${brand.name}` },
+  title: { default: `${brand.name} · Portal`, template: `%s · ${brand.name}` },
   description: "Prepare branded flight quotations from supplier documents.",
   robots: { index: false, follow: false },
 };

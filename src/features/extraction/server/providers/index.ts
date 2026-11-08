@@ -31,4 +31,4 @@ export function getExtractionProvider(env: NodeJS.ProcessEnv = process.env): Ext
 }
 
 export { ExtractionError } from "./types";
-export type { DocumentImage, ExtractionProvider } from "./types";
+export type { DocumentImage, ExtractionProvider, StructuringTask } from "./types";

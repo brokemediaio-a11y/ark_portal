@@ -13,12 +13,31 @@ const normalizeText = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}]/gu, 
 
 export const textInSource = (value: string, source: string) => normalizeText(source).includes(normalizeText(value));
 
-export function flightNumberInSource(value: string, source: string): boolean {
+function flightNumberPattern(value: string): RegExp | null {
   const m = /^\s*([A-Za-z0-9]{2})[\s-]*0*(\d{1,4})[A-Za-z]?\s*$/.exec(value);
-  if (m && /[A-Za-z]/.test(m[1])) return new RegExp(`(?<![A-Za-z0-9])${m[1]}[\\s-]*0*${m[2]}(?!\\d)`, "i").test(source);
+  if (m && /[A-Za-z]/.test(m[1])) return new RegExp(`(?<![A-Za-z0-9])${m[1]}[\\s-]*0*${m[2]}(?!\\d)`, "i");
   const digits = value.replace(/\D/g, "").replace(/^0+/, "");
-  return digits.length > 0 && new RegExp(`(?<!\\d)0*${digits}(?!\\d)`).test(source);
+  return digits.length > 0 ? new RegExp(`(?<!\\d)0*${digits}(?!\\d)`) : null;
 }
+
+export const flightNumberInSource = (value: string, source: string) => flightNumberPattern(value)?.test(source) ?? false;
+
+/** Where a flight number first appears in the text, or -1. */
+export const flightNumberIndex = (value: string, source: string) => flightNumberPattern(value)?.exec(source)?.index ?? -1;
+
+/**
+ * An airport code as a whole word ("IST" is not in "Istanbul"), or inside a
+ * six-letter GDS city pair such as "LHEDOH".
+ */
+export function codeInSource(code: string, source: string): boolean {
+  if (!/^[A-Z]{3}$/.test(code)) return textInSource(code, source);
+  return new RegExp(`(?<![A-Za-z])(?:${code}|${code}[A-Z]{3}|[A-Z]{3}${code})(?![A-Za-z])`).test(source);
+}
+
+/** Whether a piece of text contains any clock time or any date at all, used to tell "missing" from "different". */
+export const hasClockTime = (text: string) => /(?<!\d)\d{1,2}[:.]\d{2}(?!\d)/.test(text);
+export const hasDate = (text: string) =>
+  new RegExp(`(?<!\\d)\\d{1,2}${SEPARATORS}(?:${MONTHS.join("|")})|(?:${MONTHS.join("|")})[a-z]*${SEPARATORS}\\d{1,2}(?!\\d)|(?<!\\d)\\d{1,4}[-./]\\d{1,2}[-./]\\d{1,4}`, "i").test(text);
 
 export function timeInSource(value: string, source: string): boolean {
   const m = /^(\d{1,2}):(\d{2})$/.exec(value);

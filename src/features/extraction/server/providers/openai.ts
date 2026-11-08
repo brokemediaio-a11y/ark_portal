@@ -3,8 +3,7 @@ import { localToday } from "@/lib/dates";
 import OpenAI from "openai";
 import { zodResponseFormat } from "openai/helpers/zod";
 import type { ChatCompletionContentPart } from "openai/resources/chat/completions";
-import { extractionSchema } from "../../schema";
-import { buildExtractionSystemPrompt, EXTRACTION_USER_INSTRUCTION, TRANSCRIPTION_SYSTEM_PROMPT, TRANSCRIPTION_USER_INSTRUCTION } from "../prompt";
+import { TRANSCRIPTION_SYSTEM_PROMPT, TRANSCRIPTION_USER_INSTRUCTION } from "../prompt";
 import { ExtractionError, type ExtractionProvider } from "./types";
 
 interface OpenAIProviderOptions {
@@ -64,19 +63,19 @@ export function createOpenAIProvider(options: OpenAIProviderOptions): Extraction
         throw toExtractionError(error);
       }
     },
-    async extract(documentText, signal) {
+    async extract(documentText, task, signal) {
       try {
         const completion = await client.chat.completions.create(
           {
             model: options.model,
             temperature: 0,
-            response_format: zodResponseFormat(extractionSchema, "flight_quotation"),
+            response_format: zodResponseFormat(task.schema, task.name),
             messages: [
-              { role: "system", content: buildExtractionSystemPrompt(localToday()) },
+              { role: "system", content: task.systemPrompt(localToday()) },
               {
                 role: "user",
                 content: [
-                  { type: "text", text: EXTRACTION_USER_INSTRUCTION },
+                  { type: "text", text: task.userInstruction },
                   { type: "text", text: `<supplier_document>\n${documentText}\n</supplier_document>` },
                 ],
               },

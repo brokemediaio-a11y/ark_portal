@@ -8,7 +8,8 @@ A web app that helps Ark Travelers staff turn supplier flight quotations (PDFs, 
 
 | Milestone | Status |
 | --- | --- |
-| Option 1: upload a supplier quotation → review → price → branded PDF | ✅ Done |
+| Option 1: upload one or more supplier quotation files → review → price → branded PDF | ✅ Done |
+| Ticket conversion: supplier e-ticket (any format) → review → Ark-branded e-ticket PDF | ✅ Done |
 | Option 2: live fare search (Duffel, test or live mode) → select → re-price → same editor and PDF | ✅ Done |
 | Option 2 follow-up: traveller details, bags/seats, TEST booking (Duffel guide §9–11) | ⏳ Awaiting go-ahead |
 | Booking and payment | ⏳ Not built: the app only searches and quotes |
@@ -65,16 +66,18 @@ A web app that helps Ark Travelers staff turn supplier flight quotations (PDFs, 
 
 ## How it works (Option 1)
 
-1. **Upload.** Drag in a PDF or image, browse for one, or paste a screenshot with Ctrl+V.
-2. **Extraction** (server-side, `POST /api/quotations/extract`):
-   - The file is checked for size, extension and its real content type (magic bytes). It is processed in memory and never stored.
+1. **Upload.** Drag in PDFs or images, browse for them, or paste screenshots with Ctrl+V. Add as many files as the job needs (up to 8, 30 MB together); nothing is read until staff press **Read**. All files become **one** quotation, with flights in travel order.
+2. **Extraction** (server-side, `POST /api/quotations/extract`, one or more `file` fields):
+   - Each file is checked for size, extension and its real content type (magic bytes). Files are processed in memory and never stored.
+   - Several files are labelled as separate documents of one job. If more than one prints its own total, the price is left for staff to enter.
    - **PDFs with a text layer:** the text is read locally (`unpdf`) and sent to the AI as text. This is cheaper and more exact.
    - **Image-only PDFs, scans and screenshots:** pages are rendered at high resolution (`@napi-rs/canvas`) and cut into overlapping slices, because a vision API shrinks a whole page until small print is unreadable and the model starts inventing values. The slices are transcribed twice, cut differently each time, and both transcripts go to the structuring step.
    - The AI must answer in a strict JSON schema in which every field is nullable. It is told never to guess, and to list uncertain fields along with evidence.
    - The response is validated with Zod. Badly formatted values (for example `"10 Dec"` as a date) are dropped and flagged rather than guessed.
    - Code-level safeguards cover cheaper models that don't always follow instructions:
      - **Only what is printed:** every value is checked against the document's text (`source-match.ts`). Flight numbers must match digit for digit, and times must match including AM/PM. Critical values that aren't printed are removed and flagged; invented names, baggage, stops, travellers, currency and prices are removed.
-     - **Two readings:** on scans, a critical value missing from either reading is flagged for staff to compare.
+     - **Two readings:** on scans, a critical value that either reading contradicts is flagged for staff to compare. A reading that simply missed a cell is not treated as a contradiction.
+     - **Airport codes** must be printed as whole words ("IST" isn't in "Istanbul"). When only the airport's name is printed, the name is used.
      - **Itinerary rules:** repeated flights are merged. A connection that departs before the previous flight lands, or a flight number reused on another route, is flagged.
      - **Dates with no year:** the year is set to the next upcoming occurrence and flagged for staff to confirm, once per year. A printed year is never changed.
      - **Past departure dates:** a departure date in the past blocks sending.
@@ -93,6 +96,28 @@ Quotations autosave in the browser and are listed on the home page.
 - Percentage markup is rounded half-up to the currency's minor unit, e.g. cents. JPY has no decimals.
 - `selling total = supplier total + markup`. Currencies are never converted.
 - The supplier price and markup are **never** printed on the customer PDF. The PDF is built only from a customer-facing view model (`buildCustomerQuote`), and a test enforces this.
+
+## How it works (ticket conversion)
+
+Staff upload a supplier's e-ticket (Sabre receipts, airline tickets, agency tickets, one page per passenger…) and get a standard **Ark Travelers e-ticket**.
+
+1. **Upload** at *Convert a ticket* (`/tickets/new`): the same multi-file upload as quotations. All files of one booking become one e-ticket.
+2. **Extraction** (`POST /api/tickets/extract`): the same reading pipeline as quotations, with a ticket schema (`features/ticket/`). Checks specific to tickets:
+   - Passenger names (in any word order), ticket numbers, dates of birth and booking references must be printed; otherwise they are removed and flagged. Each traveller is listed once, even when every page repeats them.
+   - Passenger type is taken from the ticket, or worked out from the date of birth on the first flight (under 2 infant, 2–11 child, 12+ adult).
+   - **Persian (Solar Hijri) dates** such as `1405/07/15` are converted in code (`persian-date.ts`), never by the AI.
+   - A carrier code is not used as an airline name, a class letter not as a cabin, and a fare basis not as a booking class.
+   - Scanned PDFs can have at most 8 pages; longer files are refused rather than partly read.
+3. **Review**: booking references, passengers, flights (with terminals, booking class and status), conditions and notes, with the same red/yellow checks. A past flight is a warning, not a blocker.
+4. **Preview & send**: the Ark e-ticket PDF (`features/pdf/ticket-document.tsx`), download, an email draft, and "mark as sent". E-tickets are listed under *My tickets*.
+
+Tested against four real supplier tickets in different formats; every passenger, ticket number, booking reference, flight and time matched the source.
+
+## PDF branding
+
+Both PDFs share one header and footer (`features/pdf/brand-frame.tsx`), configured in `src/config/brand.ts`:
+- A `#A4AFB9` header band with the white Ark logo (`public/brand/ark-logo-white-mark.png`), "Ark Travelers AB" and its Persian name in the middle, and the phone numbers, email and website on the right.
+- Persian text is printed with the Vazirmatn font (`public/fonts`, SIL Open Font License), which the built-in PDF fonts lack.
 
 ## Getting started
 

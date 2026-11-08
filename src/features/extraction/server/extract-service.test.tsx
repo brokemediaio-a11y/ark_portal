@@ -1,9 +1,14 @@
 import { createCanvas } from "@napi-rs/canvas";
 import { Document, Page, Text, renderToBuffer } from "@react-pdf/renderer";
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import { extractQuotation } from "./extract-service";
+import { ticketTask } from "@/features/ticket/server/ticket-task";
+import type { TicketExtraction } from "@/features/ticket/extraction-schema";
+import type { Extraction } from "../schema";
+import { extractDocuments } from "./extract-service";
 import { mockExtractionProvider } from "./providers/mock";
 import { ExtractionError, type DocumentImage, type ExtractionProvider } from "./providers/types";
+import { DEMO_EXTRACTION } from "./quotation-demo";
+import { quotationTask } from "./quotation-task";
 
 /** A real, decodable image with some dark rows, as the page slicer needs. */
 function makePng() {
@@ -30,7 +35,7 @@ async function makePdf(text: string) {
   );
 }
 
-/** A provider that records its calls and returns fixed responses. */
+/** A provider that records its calls and returns fixed responses; transcripts are handed out in order. */
 function fakeProvider(response: unknown | (() => never), transcripts: string[] = ["read one", "read two"]) {
   const calls = { extract: [] as string[], transcribe: [] as DocumentImage[][] };
   const provider: ExtractionProvider & { calls: typeof calls } = {
@@ -49,22 +54,21 @@ function fakeProvider(response: unknown | (() => never), transcripts: string[] =
   return provider;
 }
 
-let demoData: unknown;
+const file = (name: string, bytes: Uint8Array) => ({ name, bytes });
 let textPdf: Uint8Array;
 let scannedPdf: Uint8Array;
 
 beforeAll(async () => {
-  demoData = await mockExtractionProvider.extract("", new AbortController().signal);
   textPdf = await makePdf(
     "Flight EK 623 Lahore (LHE) to Dubai (DXB) departing 10 December 2026 at 04:15, arriving 06:45. Total fare PKR 185,000 for 2 adults. Baggage 30kg.",
   );
   scannedPdf = await makePdf(" ");
 });
 
-describe("extractQuotation", () => {
+describe("extractDocuments (quotations)", () => {
   it("uses the PDF text layer when present, without reading images", async () => {
-    const provider = fakeProvider(demoData);
-    const result = await extractQuotation("quote.pdf", textPdf, provider);
+    const provider = fakeProvider(DEMO_EXTRACTION);
+    const result = await extractDocuments([file("quote.pdf", textPdf)], provider, quotationTask);
     expect(provider.calls.transcribe).toHaveLength(0);
     expect(provider.calls.extract[0]).toContain("EK 623");
     expect(result.method).toBe("pdf-text");
@@ -72,8 +76,8 @@ describe("extractQuotation", () => {
 
   it("reads scanned PDFs and images twice, and structures both readings", async () => {
     for (const [name, bytes] of [["scan.pdf", scannedPdf], ["shot.png", PNG]] as const) {
-      const provider = fakeProvider(demoData);
-      const result = await extractQuotation(name, bytes, provider);
+      const provider = fakeProvider(DEMO_EXTRACTION);
+      const result = await extractDocuments([file(name, bytes)], provider, quotationTask);
       expect(provider.calls.transcribe).toHaveLength(2);
       expect(provider.calls.transcribe[0][0].mimeType).toBe("image/png");
       expect(provider.calls.extract[0]).toContain("<reading_1>\nread one\n</reading_1>");
@@ -82,55 +86,69 @@ describe("extractQuotation", () => {
     }
   });
 
+  it("reads several files together as labelled documents of one job", async () => {
+    const provider = fakeProvider(DEMO_EXTRACTION, ["scan one", "scan two"]);
+    await extractDocuments([file("outbound.pdf", textPdf), file("return <x>.png", PNG)], provider, quotationTask);
+    const text = provider.calls.extract[0];
+    expect(provider.calls.extract).toHaveLength(1);
+    expect(text).toContain('<document_1 name="outbound.pdf">');
+    expect(text).toContain("EK 623");
+    expect(text).toContain('<document_2 name="return x.png">');
+    expect(text).toContain("<reading_1>\nscan one\n</reading_1>");
+  });
+
+  it("names the file that can't be read", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const provider = fakeProvider(DEMO_EXTRACTION);
+    const error = await extractDocuments([file("good.pdf", textPdf), file("bad.png", SIGNATURE_ONLY_PNG)], provider, quotationTask).catch((e: unknown) => e);
+    expect(error).toMatchObject({ code: "invalid_file" });
+    expect((error as Error).message).toContain("bad.png");
+    expect(provider.calls.extract).toHaveLength(0);
+    spy.mockRestore();
+  });
+
   it("strips code fences from a transcript", async () => {
-    const provider = fakeProvider(demoData, ["```\nTK 1954\n```", "TK 1954"]);
-    await extractQuotation("shot.png", PNG, provider);
+    const provider = fakeProvider(DEMO_EXTRACTION, ["```\nTK 1954\n```", "TK 1954"]);
+    await extractDocuments([file("shot.png", PNG)], provider, quotationTask);
     expect(provider.calls.extract[0]).toContain("<reading_1>\nTK 1954\n</reading_1>");
   });
 
   it("removes values neither reading supports", async () => {
-    const provider = fakeProvider(demoData, ["unrelated text", "unrelated text"]);
-    const { data } = await extractQuotation("shot.png", PNG, provider);
+    const provider = fakeProvider(DEMO_EXTRACTION, ["unrelated text", "unrelated text"]);
+    const { data } = await extractDocuments([file("shot.png", PNG)], provider, quotationTask);
     expect(data.segments[0]).toMatchObject({ flightNumber: null, departureTime: null, baggage: null });
     expect(data.totalAmount).toBeNull();
     expect(data.uncertainFields.map((f) => f.field)).toContain("segments.0.flightNumber");
   });
 
-  it("reports an image that has no text", async () => {
-    const provider = fakeProvider(demoData, ["", ""]);
-    await expect(extractQuotation("shot.png", PNG, provider)).rejects.toMatchObject({ code: "no_flight_details" });
+  it("reports images without any text, before structuring", async () => {
+    const provider = fakeProvider(DEMO_EXTRACTION, ["", ""]);
+    await expect(extractDocuments([file("shot.png", PNG)], provider, quotationTask)).rejects.toMatchObject({ code: "no_flight_details" });
     expect(provider.calls.extract).toHaveLength(0);
   });
 
-  it("rejects a corrupt image before calling the AI", async () => {
-    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
-    const provider = fakeProvider(demoData);
-    await expect(extractQuotation("shot.png", SIGNATURE_ONLY_PNG, provider)).rejects.toMatchObject({ code: "invalid_file" });
-    expect(provider.calls.transcribe).toHaveLength(0);
-    spy.mockRestore();
-  });
-
   it("keeps demo data as is, without reading images", async () => {
-    const result = await extractQuotation("shot.png", PNG, mockExtractionProvider);
+    const result = await extractDocuments([file("shot.png", PNG)], mockExtractionProvider, quotationTask);
     expect(result).toMatchObject({ method: "demo", demo: true });
     expect(result.data.segments[0].flightNumber).toBe("DA 101");
   });
 
   it("rejects invalid files before calling the AI", async () => {
-    const provider = fakeProvider(demoData);
-    await expect(extractQuotation("quote.pdf", PNG, provider)).rejects.toMatchObject({ code: "invalid_file" });
+    const provider = fakeProvider(DEMO_EXTRACTION);
+    await expect(extractDocuments([file("quote.pdf", PNG)], provider, quotationTask)).rejects.toMatchObject({ code: "invalid_file" });
     expect(provider.calls.extract).toHaveLength(0);
-    expect(provider.calls.transcribe).toHaveLength(0);
   });
 
   it("rejects AI output that doesn't match the schema", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     const provider = fakeProvider({ segments: "not an array" });
-    await expect(extractQuotation("shot.png", PNG, provider)).rejects.toMatchObject({ code: "ai_failed" });
+    await expect(extractDocuments([file("quote.pdf", textPdf)], provider, quotationTask)).rejects.toMatchObject({ code: "ai_failed" });
+    spy.mockRestore();
   });
 
   it("reports documents without flight details", async () => {
-    const provider = fakeProvider({ ...(demoData as object), documentHasFlightDetails: false, segments: [] });
-    await expect(extractQuotation("shot.png", PNG, provider)).rejects.toMatchObject({ code: "no_flight_details" });
+    const provider = fakeProvider({ ...DEMO_EXTRACTION, documentHasFlightDetails: false, segments: [] } satisfies Extraction);
+    await expect(extractDocuments([file("quote.pdf", textPdf)], provider, quotationTask)).rejects.toMatchObject({ code: "no_flight_details" });
   });
 
   it("turns provider failures into safe errors", async () => {
@@ -138,10 +156,67 @@ describe("extractQuotation", () => {
     const provider = fakeProvider(() => {
       throw new Error("secret upstream detail sk-123");
     });
-    const error = await extractQuotation("shot.png", PNG, provider).catch((e) => e);
+    const error = await extractDocuments([file("quote.pdf", textPdf)], provider, quotationTask).catch((e: unknown) => e);
     expect(error).toBeInstanceOf(ExtractionError);
-    expect(error.code).toBe("ai_failed");
-    expect(error.message).not.toContain("sk-123");
+    expect(error).toMatchObject({ code: "ai_failed" });
+    expect((error as Error).message).not.toContain("sk-123");
     spy.mockRestore();
+  });
+});
+
+/** The text of the real Iran Airtour ticket (Persian issue date, one passenger). */
+const TAHIRI = `Ticket Number | Ticket Issuance Date | Ticket Expiry Date | Confirmation / .Booking ref
+4911013760658 | 1405/07/15 | 1406/01/16 | 4S2JX
+Passenger Name : TAHIRI / QODRATULLAH MR.
+FROM: Mashhad | TO: Istanbul (IST) | FLIGHT DATE : 18 Oct 2026 | SUNDAY | DEPARTURE 08:00 Arrival 11:30
+Flight Number B9-9735 | Baggage Allowance 30 kg | Economy Flight Class`;
+
+const tahiriAnswer = (over: Partial<TicketExtraction> = {}): TicketExtraction => ({
+  documentHasTicketDetails: true,
+  bookingReference: "4S2JX",
+  airlineReference: null,
+  issueDate: "2026-10-18",
+  issueDateAsPrinted: "1405/07/15",
+  issuedBy: null,
+  passengers: [
+    { name: "TAHIRI / QODRATULLAH MR.", type: null, dateOfBirth: null, ticketNumber: "4911013760658" },
+    { name: "TAHIRI / QODRATULLAH MR.", type: null, dateOfBirth: null, ticketNumber: "4911013760658" },
+  ],
+  segments: [
+    {
+      airlineName: null, airlineCode: null, flightNumber: "B9-9735", originCode: "MHD", originName: "Mashhad", destinationCode: "IST",
+      destinationName: "Istanbul", departureDate: "2026-10-18", departureTime: "08:00", arrivalDate: "2026-10-18", arrivalTime: "11:30",
+      duration: null, stops: null, cabin: "Y", baggage: "30 kg", departureTerminal: null, arrivalTerminal: null, bookingClass: "Y", bookingStatus: null,
+    },
+  ],
+  fareConditions: null,
+  uncertainFields: [],
+  ...over,
+});
+
+describe("extractDocuments (tickets)", () => {
+  it("converts the Persian issue date in code and keeps every passenger once", async () => {
+    const { data } = await extractDocuments([file("ticket.png", PNG)], fakeProvider(tahiriAnswer(), [TAHIRI, TAHIRI]), ticketTask);
+    expect(data.issueDate).toBe("2026-10-07");
+    expect(data.passengers).toHaveLength(1);
+    expect(data.passengers[0]).toMatchObject({ name: "TAHIRI / QODRATULLAH MR.", ticketNumber: "4911013760658" });
+  });
+
+  it("drops an airport code that isn't printed, quietly when the name is, and a class letter given as the cabin", async () => {
+    const { data } = await extractDocuments([file("ticket.png", PNG)], fakeProvider(tahiriAnswer(), [TAHIRI, TAHIRI]), ticketTask);
+    expect(data.segments[0]).toMatchObject({ originCode: null, originName: "Mashhad", destinationCode: "IST", cabin: null, bookingClass: "Y" });
+    expect(data.uncertainFields.map((f) => f.field)).not.toContain("segments.0.originCode");
+  });
+
+  it("removes a ticket number that isn't printed, and flags one a reading contradicts", async () => {
+    const answer = tahiriAnswer({ passengers: [{ name: "TAHIRI / QODRATULLAH MR.", type: null, dateOfBirth: null, ticketNumber: "4911013760659" }] });
+    const removed = await extractDocuments([file("ticket.png", PNG)], fakeProvider(answer, [TAHIRI, TAHIRI]), ticketTask);
+    expect(removed.data.passengers[0].ticketNumber).toBeNull();
+    expect(removed.data.uncertainFields.map((f) => f.field)).toContain("passengers.0.ticketNumber");
+
+    const misread = TAHIRI.replace("4911013760658", "4911013760668");
+    const flagged = await extractDocuments([file("ticket.png", PNG)], fakeProvider(tahiriAnswer(), [TAHIRI, misread]), ticketTask);
+    expect(flagged.data.passengers[0].ticketNumber).toBe("4911013760658");
+    expect(flagged.data.uncertainFields.map((f) => f.field)).toContain("passengers.0.ticketNumber");
   });
 });

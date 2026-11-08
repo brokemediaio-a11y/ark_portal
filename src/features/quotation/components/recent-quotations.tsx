@@ -9,7 +9,7 @@ import { buildCustomerQuote } from "../customer-view";
 import { quotationStore, useQuotationMap } from "../storage";
 import { StatusBadge } from "./status-badge";
 
-const relativeTime = (iso: string) => {
+export const relativeTime = (iso: string) => {
   const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
   const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
   if (minutes < 60) return rtf.format(-minutes, "minute");
@@ -34,7 +34,7 @@ export function RecentQuotations({ limit }: { limit?: number } = {}) {
         <div className="grid place-items-center py-12 text-ink-muted"><Loader2 className="animate-spin" aria-label="Loading" /></div>
       ) : quotations.length === 0 ? (
         <div className="px-6 py-12 text-center text-sm text-ink-muted">
-          You haven&apos;t made any quotations yet. Choose one of the two options above to start your first.
+          You haven&apos;t made any quotations yet. Upload a supplier quote or search flights to start your first.
         </div>
       ) : (
         <ul className="divide-y divide-line">

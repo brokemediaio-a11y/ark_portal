@@ -19,7 +19,7 @@ export function ReviewChecklist({ issues, onJump, className }: ReviewChecklistPr
     return (
       <div className={cn("flex items-center gap-3 rounded-xl border border-success/25 bg-success-soft p-4 text-sm text-success-ink", className)}>
         <CircleCheck size={20} className="shrink-0" />
-        <span className="font-medium">Everything looks complete. You can preview and send the quotation.</span>
+        <span className="font-medium">Everything looks complete. You can preview and send it.</span>
       </div>
     );
   }

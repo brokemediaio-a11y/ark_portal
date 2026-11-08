@@ -8,13 +8,15 @@ import { cn } from "@/lib/cn";
 import { checkFileBasics } from "../file-validation";
 
 interface FileDropzoneProps {
+  /** Called with each accepted file; several can be dropped or chosen at once. */
   onFile: (file: File) => void;
   onReject: (message: string) => void;
   disabled?: boolean;
+  label?: string;
 }
 
-/** Drag & drop, browse, or paste a screenshot (Ctrl/⌘+V) anywhere on the page. */
-export function FileDropzone({ onFile, onReject, disabled }: FileDropzoneProps) {
+/** Drag & drop, browse, or paste screenshots (Ctrl/⌘+V) anywhere on the page. One or many files. */
+export function FileDropzone({ onFile, onReject, disabled, label = "Drag the supplier documents here" }: FileDropzoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
 
@@ -36,7 +38,7 @@ export function FileDropzone({ onFile, onReject, disabled }: FileDropzoneProps) 
       if (!blob) return;
       e.preventDefault();
       const ext = blob.type.split("/")[1]?.replace("jpeg", "jpg") ?? "png";
-      const name = blob.name && blob.name !== "image.png" ? blob.name : `pasted-screenshot.${ext}`;
+      const name = blob.name && blob.name !== "image.png" ? blob.name : `screenshot-${new Date().toTimeString().slice(0, 8).replace(/:/g, "")}.${ext}`;
       acceptRef.current(new File([blob], name, { type: blob.type }));
     };
     window.addEventListener("paste", onPaste);
@@ -46,7 +48,7 @@ export function FileDropzone({ onFile, onReject, disabled }: FileDropzoneProps) 
   const onDrop = (e: DragEvent) => {
     e.preventDefault();
     setDragging(false);
-    accept(e.dataTransfer.files?.[0]);
+    Array.from(e.dataTransfer.files ?? []).forEach(accept);
   };
 
   return (
@@ -67,11 +69,11 @@ export function FileDropzone({ onFile, onReject, disabled }: FileDropzoneProps) 
         <UploadCloud size={30} aria-hidden />
       </span>
       <p className="text-lg font-semibold text-ink">
-        {dragging ? "Drop the file here" : "Drag the supplier quotation here"}
+        {dragging ? "Drop the files here" : label}
       </p>
-      <p className="mt-1 text-sm text-ink-muted">or pick it from your computer</p>
+      <p className="mt-1 text-sm text-ink-muted">or pick them from your computer. Add as many as you need, then read them together.</p>
       <Button size="lg" icon={FolderOpen} className="mt-5" onClick={() => inputRef.current?.click()}>
-        Choose a file
+        Choose files
       </Button>
 
       <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-ink-muted">
@@ -87,9 +89,10 @@ export function FileDropzone({ onFile, onReject, disabled }: FileDropzoneProps) 
         ref={inputRef}
         type="file"
         className="sr-only"
+        multiple
         accept={ACCEPTED_EXTENSIONS.join(",")}
         onChange={(e) => {
-          accept(e.target.files?.[0]);
+          Array.from(e.target.files ?? []).forEach(accept);
           e.target.value = "";
         }}
       />

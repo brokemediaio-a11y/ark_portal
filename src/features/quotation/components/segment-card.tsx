@@ -10,13 +10,15 @@ import type { FlightSegment } from "../schema";
 
 type TextKey = Exclude<keyof FlightSegment, "id" | "stops">;
 
-interface SegmentCardProps {
-  segment: FlightSegment;
+interface SegmentCardProps<S extends FlightSegment> {
+  segment: S;
   index: number;
   total: number;
-  onChange: (patch: Partial<FlightSegment>) => void;
+  onChange: (patch: Partial<S>) => void;
   onMove: (direction: -1 | 1) => void;
   onRemove: () => void;
+  /** Extra fields shown at the end of the card (e.g. terminals on an e-ticket). */
+  extra?: React.ReactNode;
 }
 
 interface TextOptions {
@@ -28,13 +30,13 @@ interface TextOptions {
   required?: boolean;
 }
 
-export function SegmentCard({ segment, index, total, onChange, onMove, onRemove }: SegmentCardProps) {
+export function SegmentCard<S extends FlightSegment>({ segment, index, total, onChange, onMove, onRemove, extra }: SegmentCardProps<S>) {
   const text = (key: TextKey, opts: TextOptions = {}) => (
     <TextField
       label={SEGMENT_FIELD_LABELS[key]}
       path={segmentField(index, key)}
       value={segment[key]}
-      onChange={(v) => onChange({ [key]: v })}
+      onChange={(v) => onChange({ [key]: v } as Partial<S>)}
       {...opts}
     />
   );
@@ -87,19 +89,20 @@ export function SegmentCard({ segment, index, total, onChange, onMove, onRemove 
             label={SEGMENT_FIELD_LABELS.stops}
             path={segmentField(index, "stops")}
             value={segment.stops}
-            onChange={(v) => onChange({ stops: v })}
+            onChange={(v) => onChange({ stops: v } as Partial<S>)}
             integer
             placeholder="0 = non-stop"
           />
           {text("duration", { placeholder: "e.g. 3h 15m" })}
           {text("baggage", { placeholder: "e.g. 30 kg", hint: "Only if the supplier states it." })}
         </FieldGroup>
+        {extra}
       </div>
     </article>
   );
 }
 
-function FieldGroup({ title, columns = 3, children }: { title: string; columns?: 3 | 4; children: React.ReactNode }) {
+export function FieldGroup({ title, columns = 3, children }: { title: string; columns?: 3 | 4; children: React.ReactNode }) {
   return (
     <fieldset>
       <legend className="mb-2.5 text-xs font-semibold tracking-wide text-ink-faint uppercase">{title}</legend>

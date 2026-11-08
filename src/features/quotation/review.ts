@@ -52,7 +52,7 @@ function checkFormat(
   if (value && !pattern.test(value)) issues.push({ field, level: "blocking", message });
 }
 
-function reviewSegment(segment: FlightSegment, index: number, today: string): ReviewIssue[] {
+export function reviewSegment(segment: FlightSegment, index: number, today: string): ReviewIssue[] {
   const issues: ReviewIssue[] = [];
   const f = (key: keyof FlightSegment) => segmentField(index, key);
   const label = `Flight ${index + 1}`;

@@ -50,10 +50,17 @@ export const extractionSchema = z.object({
 
 export type ExtractedSegment = z.infer<typeof extractedSegmentSchema>;
 export type Extraction = z.infer<typeof extractionSchema>;
+export type UncertainField = Extraction["uncertainFields"][number];
 
-/** Response body of POST /api/quotations/extract. */
-export type ExtractResponse =
-  | { ok: true; data: Extraction; method: ExtractionMethod; demo: boolean }
+/** What quotations and tickets have in common, so the flight checks work on both. */
+export interface ItineraryExtraction<S extends ExtractedSegment = ExtractedSegment> {
+  segments: S[];
+  uncertainFields: UncertainField[];
+}
+
+/** Response body of the extraction endpoints (quotations and tickets). */
+export type ExtractResponse<T = Extraction> =
+  | { ok: true; data: T; method: ExtractionMethod; demo: boolean }
   | { ok: false; error: string; code: ExtractErrorCode };
 
 export type ExtractionMethod = "pdf-text" | "vision" | "demo";
