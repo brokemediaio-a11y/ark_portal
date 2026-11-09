@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Manrope, Public_Sans } from "next/font/google";
-import { AppShell } from "@/components/layout/app-shell";
 import { brand } from "@/config/brand";
 import "./globals.css";
 
@@ -18,7 +17,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     // suppressHydrationWarning: browser extensions (e.g. Grammarly) add attributes to <html>/<body>.
     <html lang="en" className={`${publicSans.variable} ${manrope.variable} h-full antialiased`} suppressHydrationWarning>
       <body className="min-h-full font-sans" suppressHydrationWarning>
-        <AppShell>{children}</AppShell>
+        {children}
       </body>
     </html>
   );

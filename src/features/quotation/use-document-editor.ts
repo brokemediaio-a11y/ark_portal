@@ -15,7 +15,7 @@ export interface EditableDocument<S extends FlightSegment> {
 }
 
 interface DocumentEditorOptions<T, S> {
-  save: (doc: T) => void;
+  save: (doc: T) => void | Promise<unknown>;
   review: (doc: T) => ReviewIssue[];
   /** A new flight, given the last one (to pre-fill its origin). */
   newSegment: (previous: S | undefined) => S;
@@ -60,15 +60,16 @@ export function useDocumentEditor<S extends FlightSegment, T extends EditableDoc
       return;
     }
     setSaveState("saving");
-    const timer = setTimeout(() => {
+    let cancelled = false;
+    const timer = setTimeout(async () => {
       try {
-        optionsRef.current.save(doc);
-        setSaveState("saved");
+        await optionsRef.current.save(doc);
+        if (!cancelled) setSaveState("saved");
       } catch {
-        setSaveState("error");
+        if (!cancelled) setSaveState("error");
       }
     }, AUTOSAVE_DELAY_MS);
-    return () => clearTimeout(timer);
+    return () => { cancelled = true; clearTimeout(timer); };
   }, [doc]);
 
   const update = useCallback(<K extends keyof T>(key: K, value: T[K]) => {

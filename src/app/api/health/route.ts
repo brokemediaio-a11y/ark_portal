@@ -1,8 +1,12 @@
 import { connection } from "next/server";
+import { currentUser } from "@/features/auth/server";
+import { can } from "@/features/auth/permissions";
 
 /** Liveness + configuration status. Never returns secrets, only whether they are set. */
 export async function GET() {
   await connection();
+  const user = await currentUser();
+  if (!user || !can(user.role, "users")) return Response.json({ status: "ok" });
   const duffelEnv = (process.env.DUFFEL_ENV ?? "test").toLowerCase();
   return Response.json({
     status: "ok",

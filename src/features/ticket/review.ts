@@ -1,4 +1,4 @@
-import { reviewSegment, type ReviewIssue } from "@/features/quotation/review";
+import { reviewFlightSequence, reviewSegment, type ReviewIssue } from "@/features/quotation/review";
 import { ISO_DATE } from "@/features/quotation/schema";
 import { localToday } from "@/lib/dates";
 import type { Ticket } from "./schema";
@@ -32,6 +32,7 @@ export function reviewTicket(t: Ticket, today: string = localToday()): ReviewIss
     ),
   );
 
+  issues.push(...reviewFlightSequence(t.segments));
   for (const flag of t.reviewFlags) issues.push({ field: flag.field, level: "warning", message: `Please double-check: ${flag.reason}` });
   return issues;
 }

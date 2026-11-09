@@ -15,7 +15,7 @@ export const textInSource = (value: string, source: string) => normalizeText(sou
 
 function flightNumberPattern(value: string): RegExp | null {
   const m = /^\s*([A-Za-z0-9]{2})[\s-]*0*(\d{1,4})[A-Za-z]?\s*$/.exec(value);
-  if (m && /[A-Za-z]/.test(m[1])) return new RegExp(`(?<![A-Za-z0-9])${m[1]}[\\s-]*0*${m[2]}(?!\\d)`, "i");
+  if (m && /[A-Za-z]/.test(m[1])) return new RegExp(`(?<![A-Za-z0-9])${m[1]}[\\s|:-]*0*${m[2]}(?!\\d)`, "i");
   const digits = value.replace(/\D/g, "").replace(/^0+/, "");
   return digits.length > 0 ? new RegExp(`(?<!\\d)0*${digits}(?!\\d)`) : null;
 }

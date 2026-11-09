@@ -1,15 +1,17 @@
+import { apiAccess } from "@/features/auth/server";
 import { connection } from "next/server";
 import { FlightProviderError, getFlightProvider } from "@/features/flights/server/providers";
 import type { OfferResponse } from "@/features/flights/schema";
-import { clientKey, createRateLimiter } from "@/lib/rate-limit";
+import { createRateLimiter } from "@/lib/rate-limit";
 
 const limiter = createRateLimiter({ limit: 30, windowMs: 60_000 });
 
 /** Latest price and details for one offer — always called before quoting it. */
 export async function GET(request: Request, ctx: RouteContext<"/api/flights/offers/[id]">) {
   await connection();
+  const access = await apiAccess(request, "flights"); if (access.response) return access.response;
   try {
-    if (!limiter(clientKey(request)).ok) throw new FlightProviderError("rate_limited", "Too many requests. Please wait a moment.", 429);
+    if (!limiter(access.user.id).ok) throw new FlightProviderError("rate_limited", "Too many requests. Please wait a moment.", 429);
     const { id } = await ctx.params;
     const provider = getFlightProvider();
     const offer = await provider.refreshOffer(id);

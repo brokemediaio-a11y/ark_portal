@@ -122,11 +122,9 @@ export function BrandHeader({ logoSrc }: { logoSrc: string | null }) {
 /* ---------- Closing footer (end of the document only) ---------- */
 
 const f = StyleSheet.create({
-  /** Pushed to the bottom of the last page when there is room. */
-  wrap: { marginTop: "auto", borderRadius: 7, overflow: "hidden" },
-  spacer: { height: 12 },
+  wrap: { flexShrink: 0, borderTopLeftRadius: 10, borderTopRightRadius: 10, borderBottomLeftRadius: 0, borderBottomRightRadius: 0, overflow: "hidden" },
   background: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
-  body: { flexDirection: "row", alignItems: "center", paddingVertical: 10, paddingHorizontal: 18 },
+  body: { flexDirection: "row", alignItems: "center", paddingVertical: 14, paddingHorizontal: PAGE_PADDING_X },
   left: { width: 125 },
   logo: { width: 34, height: 29, objectFit: "contain", marginBottom: 5 },
   label: { fontSize: 6, color: DARK.muted, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 4 },
@@ -141,7 +139,7 @@ const f = StyleSheet.create({
   right: { width: 150 },
   contactRow: { flexDirection: "row", alignItems: "flex-start", marginBottom: 3 },
   contactText: { fontSize: 7.5, color: DARK.text, marginLeft: 6, textDecoration: "none", flex: 1, lineHeight: 1.35 },
-  bottom: { flexDirection: "row", justifyContent: "space-between", borderTopWidth: 0.5, borderTopColor: DARK.rule, paddingVertical: 5, paddingHorizontal: 18 },
+  bottom: { flexDirection: "row", justifyContent: "space-between", borderTopWidth: 0.5, borderTopColor: DARK.rule, paddingVertical: 5, paddingHorizontal: PAGE_PADDING_X },
   small: { fontSize: 6.5, color: DARK.muted },
 });
 
@@ -177,8 +175,6 @@ function ClosingContact({ icon, children, href }: { icon: IconName; children: st
  */
 export function BrandClosing({ logoSrc, reference }: { logoSrc: string | null; reference: string }) {
   return (
-    <>
-    <View style={f.spacer} />
     <View style={f.wrap} wrap={false}>
       <Svg style={f.background} viewBox="0 0 100 100" preserveAspectRatio="none">
         <Defs>
@@ -228,6 +224,5 @@ export function BrandClosing({ logoSrc, reference }: { logoSrc: string | null; r
         <Text style={f.small}>{reference}</Text>
       </View>
     </View>
-    </>
   );
 }

@@ -14,14 +14,14 @@ export function UploadTicketFlow() {
       documentLabel="the supplier ticket"
       dropLabel="Drag the supplier ticket(s) here"
       endpoint="/api/tickets/extract"
-      onExtracted={(result, files) => {
+      onExtracted={async (result, files) => {
         const ticket = ticketFromExtraction(result.data, { fileNames: files.map((f) => f.name), demo: result.demo });
-        ticketStore.save(ticket);
+        await ticketStore.save(ticket);
         return `/tickets/${ticket.id}`;
       }}
-      onManual={() => {
+      onManual={async () => {
         const ticket = createEmptyTicket("manual");
-        ticketStore.save(ticket);
+        await ticketStore.save(ticket);
         return `/tickets/${ticket.id}`;
       }}
       manualText="You can still make an e-ticket. Type in the passengers and flights yourself."

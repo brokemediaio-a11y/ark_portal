@@ -1,4 +1,7 @@
 "use client";
+import { usePortalUser } from "@/features/auth/context";
+import { can } from "@/features/auth/permissions";
+import { useState } from "react";
 
 import Link from "next/link";
 import { ArrowRight, FileStack, Loader2, Trash2 } from "lucide-react";
@@ -18,17 +21,20 @@ export const relativeTime = (iso: string) => {
 };
 
 export function RecentQuotations({ limit }: { limit?: number } = {}) {
-  const map = useQuotationMap();
+  const user = usePortalUser();
+  const [deleteError, setDeleteError] = useState("");
+  const { records: map, error, retry } = useQuotationMap();
   const all = map ? quotationStore.list() : null;
   const quotations = all && limit ? all.slice(0, limit) : all;
 
-  const remove = (id: string, quoteNumber: string) => {
-    if (window.confirm(`Delete quotation ${quoteNumber}? This can't be undone.`)) quotationStore.remove(id);
+  const remove = async (id: string, quoteNumber: string) => {
+    if (window.confirm(`Delete quotation ${quoteNumber}? This can't be undone.`)) { try { await quotationStore.remove(id); } catch (e) { setDeleteError(e instanceof Error ? e.message : "Could not delete."); } }
   };
 
   return (
     <Card>
-      <CardHeader icon={FileStack} title={limit ? "Your latest quotations" : "All quotations"} description="Saved on this computer only. Click one to carry on where you left off."
+      {(error || deleteError) && <div role="alert" className="p-4 text-danger">{error || deleteError} {error && <button onClick={retry} className="underline">Try again</button>}</div>}
+      <CardHeader icon={FileStack} title={limit ? "Your latest quotations" : "All quotations"} description="Saved securely to your account. Click one to continue."
         actions={limit && all && all.length > limit ? <Link href="/quotations" className="text-sm font-semibold text-brand hover:underline">See all {all.length}</Link> : undefined} />
       {!quotations ? (
         <div className="grid place-items-center py-12 text-ink-muted"><Loader2 className="animate-spin" aria-label="Loading" /></div>
@@ -57,7 +63,7 @@ export function RecentQuotations({ limit }: { limit?: number } = {}) {
                   <span className="text-sm font-semibold tabular-nums text-ink">{view.totalPrice}</span>
                   <ArrowRight size={16} className="text-ink-faint transition-transform group-hover:translate-x-0.5" aria-hidden />
                 </Link>
-                <Button variant="danger" size="sm" icon={Trash2} aria-label={`Delete quotation ${q.quoteNumber}`} title="Delete" onClick={() => remove(q.id, q.quoteNumber)} />
+                {user && can(user.role, "delete") && <Button variant="danger" size="sm" icon={Trash2} aria-label={`Delete quotation ${q.quoteNumber}`} title="Delete" onClick={() => void remove(q.id, q.quoteNumber)} />}
               </li>
             );
           })}

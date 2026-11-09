@@ -17,7 +17,7 @@ export const segmentAfter = (previous: FlightSegment | undefined): FlightSegment
 
 const OPTIONS = {
   save: (q: Quotation) => {
-    quotationStore.save(q);
+    return quotationStore.save(q);
   },
   review: (q: Quotation) => reviewQuotation(q),
   newSegment: segmentAfter,

@@ -1,8 +1,9 @@
-import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+import { Document, StyleSheet, Text, View } from "@react-pdf/renderer";
 import { brand } from "@/config/brand";
 import type { CustomerTicket } from "@/features/ticket/ticket-view";
-import { BrandClosing, BrandHeader, scriptFont } from "./brand-frame";
-import { BulletList, FlightCard, Meta, Paragraph, pdfStyles } from "./itinerary";
+import { BrandHeader, scriptFont } from "./brand-frame";
+import { DocumentPage } from "./document-page";
+import { BulletList, FlightItinerary, Meta, Paragraph, pdfStyles } from "./itinerary";
 
 const c = brand.colors;
 
@@ -47,7 +48,7 @@ interface TicketDocumentProps {
 export function TicketDocument({ ticket, logoSrc = null, airlineLogos = {} }: TicketDocumentProps) {
   return (
     <Document title={`E-ticket ${ticket.bookingReference ?? ticket.ticketRef}`} author={brand.legalName} creator={brand.legalName} producer={brand.legalName}>
-      <Page size="A4" style={pdfStyles.page}>
+      <DocumentPage logoSrc={logoSrc} reference={ticket.bookingReference ? `${ticket.ticketRef} · PNR ${ticket.bookingReference}` : ticket.ticketRef}>
         <BrandHeader logoSrc={logoSrc} />
         {ticket.watermark && <Text style={pdfStyles.warning}>{ticket.watermark}</Text>}
 
@@ -69,16 +70,13 @@ export function TicketDocument({ ticket, logoSrc = null, airlineLogos = {} }: Ti
         <Passengers passengers={ticket.passengers} />
 
         <Text style={pdfStyles.sectionTitle}>Itinerary</Text>
-        {ticket.segments.map((segment, i) => (
-          <FlightCard key={i} segment={segment} logo={segment.airlineCode ? airlineLogos[segment.airlineCode] : undefined} />
-        ))}
+        <FlightItinerary segments={ticket.segments} airlineLogos={airlineLogos} />
 
         <Paragraph title="Fare conditions" text={ticket.fareConditions} />
         <Paragraph title="Notes" text={ticket.notes} />
         <BulletList title="Important information" items={ticket.terms} />
 
-        <BrandClosing logoSrc={logoSrc} reference={ticket.bookingReference ? `${ticket.ticketRef} · PNR ${ticket.bookingReference}` : ticket.ticketRef} />
-      </Page>
+      </DocumentPage>
     </Document>
   );
 }

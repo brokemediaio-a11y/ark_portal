@@ -1,4 +1,7 @@
 "use client";
+import { usePortalUser } from "@/features/auth/context";
+import { can } from "@/features/auth/permissions";
+import { useState } from "react";
 
 import Link from "next/link";
 import { ArrowRight, Loader2, Ticket as TicketIcon, Trash2 } from "lucide-react";
@@ -11,20 +14,23 @@ import { routeSummaryOf } from "@/features/quotation/customer-view";
 import { ticketStore, useTicketMap } from "../storage";
 
 export function RecentTickets({ limit }: { limit?: number } = {}) {
-  const map = useTicketMap();
+  const user = usePortalUser();
+  const [deleteError, setDeleteError] = useState("");
+  const { records: map, error, retry } = useTicketMap();
   const all = map ? ticketStore.list() : null;
   const tickets = all && limit ? all.slice(0, limit) : all;
 
-  const remove = (id: string, label: string) => {
-    if (window.confirm(`Delete e-ticket ${label}? This can't be undone.`)) ticketStore.remove(id);
+  const remove = async (id: string, label: string) => {
+    if (window.confirm(`Delete e-ticket ${label}? This can't be undone.`)) { try { await ticketStore.remove(id); } catch (e) { setDeleteError(e instanceof Error ? e.message : "Could not delete."); } }
   };
 
   return (
     <Card>
+      {(error || deleteError) && <div role="alert" className="p-4 text-danger">{error || deleteError} {error && <button onClick={retry} className="underline">Try again</button>}</div>}
       <CardHeader
         icon={TicketIcon}
         title={limit ? "Your latest e-tickets" : "All e-tickets"}
-        description="Saved on this computer only. Click one to edit it or download it again."
+        description="Saved securely to your account. Click one to edit or download."
         actions={limit && all && all.length > limit ? <Link href="/tickets" className="text-sm font-semibold text-brand hover:underline">See all {all.length}</Link> : undefined}
       />
       {!tickets ? (
@@ -54,7 +60,7 @@ export function RecentTickets({ limit }: { limit?: number } = {}) {
                   </div>
                   <ArrowRight size={16} className="text-ink-faint transition-transform group-hover:translate-x-0.5" aria-hidden />
                 </Link>
-                <Button variant="danger" size="sm" icon={Trash2} aria-label={`Delete e-ticket ${label}`} title="Delete" onClick={() => remove(t.id, label)} />
+                {user && can(user.role, "delete") && <Button variant="danger" size="sm" icon={Trash2} aria-label={`Delete e-ticket ${label}`} title="Delete" onClick={() => void remove(t.id, label)} />}
               </li>
             );
           })}

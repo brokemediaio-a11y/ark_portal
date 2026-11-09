@@ -1,8 +1,9 @@
-import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+import { Document, StyleSheet, Text, View } from "@react-pdf/renderer";
 import { brand } from "@/config/brand";
 import type { CustomerQuote } from "@/features/quotation/customer-view";
-import { BrandClosing, BrandHeader } from "./brand-frame";
-import { BulletList, FlightCard, Meta, Paragraph, pdfStyles } from "./itinerary";
+import { BrandHeader } from "./brand-frame";
+import { DocumentPage } from "./document-page";
+import { BulletList, FlightItinerary, Meta, Paragraph, pdfStyles } from "./itinerary";
 
 const c = brand.colors;
 
@@ -19,11 +20,11 @@ interface QuotationDocumentProps {
   airlineLogos?: Record<string, string>;
 }
 
-/** Reusable A4 Ark Travelers quotation. Takes only the customer-facing view model. */
+/** A4-width quotation that grows with its content. Takes only the customer-facing view model. */
 export function QuotationDocument({ quote, logoSrc = null, airlineLogos = {} }: QuotationDocumentProps) {
   return (
     <Document title={`Quotation ${quote.quoteNumber}`} author={brand.legalName} creator={brand.legalName} producer={brand.legalName}>
-      <Page size="A4" style={pdfStyles.page}>
+      <DocumentPage logoSrc={logoSrc} reference={quote.watermark ? `${quote.quoteNumber} · ${quote.watermark}` : quote.quoteNumber}>
         <BrandHeader logoSrc={logoSrc} />
         {quote.watermark && <Text style={pdfStyles.warning}>{quote.watermark}</Text>}
 
@@ -42,9 +43,7 @@ export function QuotationDocument({ quote, logoSrc = null, airlineLogos = {} }: 
         </View>
 
         <Text style={pdfStyles.sectionTitle}>Itinerary</Text>
-        {quote.segments.map((segment, i) => (
-          <FlightCard key={i} segment={segment} logo={segment.airlineCode ? airlineLogos[segment.airlineCode] : undefined} />
-        ))}
+        <FlightItinerary segments={quote.segments} airlineLogos={airlineLogos} />
 
         <View style={s.priceBox} wrap={false}>
           <View>
@@ -58,8 +57,7 @@ export function QuotationDocument({ quote, logoSrc = null, airlineLogos = {} }: 
         <Paragraph title="Fare conditions" text={quote.fareConditions} />
         <BulletList title="Terms" items={quote.terms} />
 
-        <BrandClosing logoSrc={logoSrc} reference={quote.watermark ? `${quote.quoteNumber} · ${quote.watermark}` : quote.quoteNumber} />
-      </Page>
+      </DocumentPage>
     </Document>
   );
 }

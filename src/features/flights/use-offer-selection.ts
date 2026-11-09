@@ -23,7 +23,7 @@ export type SelectionState =
  * `onConfirmed` straight away when the price is unchanged; otherwise waits for
  * staff to accept the new price.
  */
-export function useOfferSelection(onConfirmed: (latest: Refreshed) => void) {
+export function useOfferSelection(onConfirmed: (latest: Refreshed) => void | Promise<void>) {
   const [state, setState] = useState<SelectionState>({ status: "idle" });
 
   const select = useCallback(
@@ -40,7 +40,7 @@ export function useOfferSelection(onConfirmed: (latest: Refreshed) => void) {
           setState({ status: "price_changed", previous: offer, latest });
         } else {
           setState({ status: "idle" });
-          onConfirmed(latest);
+          await onConfirmed(latest);
         }
       } catch {
         setState({ status: "error", offer, error: "We couldn't reach the server. Check your internet connection and try again.", expired: false });
@@ -49,11 +49,12 @@ export function useOfferSelection(onConfirmed: (latest: Refreshed) => void) {
     [onConfirmed],
   );
 
-  const acceptNewPrice = useCallback(() => {
+  const acceptNewPrice = useCallback(async () => {
     if (state.status !== "price_changed") return;
     const latest = state.latest;
     setState({ status: "idle" });
-    onConfirmed(latest);
+    try { await onConfirmed(latest); }
+    catch (error) { setState({ status: "error", offer: latest.offer, error: error instanceof Error ? error.message : "Could not save quotation.", expired: false }); }
   }, [state, onConfirmed]);
 
   const reset = useCallback(() => setState({ status: "idle" }), []);

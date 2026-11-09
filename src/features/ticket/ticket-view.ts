@@ -39,7 +39,7 @@ export function buildCustomerTicket(t: Ticket): CustomerTicket {
       p.name ? [{ name: p.name, type: p.type ? PASSENGER_TYPE_LABELS[p.type] : null, dateOfBirth: formatIsoDate(p.dateOfBirth), ticketNumber: p.ticketNumber }] : [],
     ),
     segments: t.segments.map((s, i) => {
-      const segment = toCustomerSegment(s, i);
+      const segment = toCustomerSegment(s, i, t.segments[i - 1]);
       const travelClass = s.cabin && s.bookingClass ? `${s.cabin} (${s.bookingClass})` : (s.cabin ?? s.bookingClass);
       return {
         ...segment,

@@ -2,12 +2,15 @@
   "name": "ark-portal",
   "version": "0.1.0",
   "private": true,
+  "engines": { "node": ">=22.13.0" },
   "scripts": {
     "dev": "next dev",
+    "setup:key": "node scripts/setup-key.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
+    "test:access:smoke": "node scripts/smoke-access.mjs",
     "test:watch": "vitest",
     "typecheck": "next typegen && tsc --noEmit"
   },

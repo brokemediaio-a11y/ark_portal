@@ -1,3 +1,5 @@
+import { requireUser } from "@/features/auth/server";
+import { canVisit } from "@/features/auth/permissions";
 import { ArrowRight, ClipboardCheck, Download, FileInput, FilePlus2, Search, TicketCheck } from "lucide-react";
 import Link from "next/link";
 import { RecentQuotations } from "@/features/quotation/components/recent-quotations";
@@ -43,7 +45,8 @@ function FlightPath() {
   );
 }
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const user = await requireUser();
   return (
     <div className="space-y-12">
       <section aria-labelledby="start-heading" className="relative">
@@ -71,7 +74,7 @@ export default function DashboardPage() {
 
         <h2 className="mt-12 text-lg font-bold text-brand">Choose what you have</h2>
         <ul className="mt-4 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {CHOICES.map(({ href, icon: Icon, title, text, action }) => (
+          {CHOICES.filter(choice => canVisit(user.role, choice.href)).map(({ href, icon: Icon, title, text, action }) => (
             <li key={href}>
               <Link href={href} className="ticket group h-full">
                 <span className="ticket-body block space-y-4">

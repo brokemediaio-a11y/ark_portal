@@ -8,6 +8,9 @@ import { Suspense, useEffect, useState, type ReactNode } from "react";
 import { brand } from "@/config/brand";
 import { cn } from "@/lib/cn";
 import { NAV_ITEMS, isActive } from "./nav-items";
+import { usePortalUser } from "@/features/auth/context";
+import { canVisit, ROLES } from "@/features/auth/permissions";
+import { SignOut } from "@/features/auth/sign-out";
 
 function Logo({ className }: { className?: string }) {
   return (
@@ -24,10 +27,11 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 function NavLinks({ pathname, onNavigate }: { pathname: string | null; onNavigate?: () => void }) {
+  const user = usePortalUser();
   return (
     <nav aria-label="Main">
       <ul className="space-y-1">
-        {NAV_ITEMS.map(({ href, label, hint, icon: Icon }) => {
+        {NAV_ITEMS.filter(item => user && canVisit(user.role, item.href)).map(({ href, label, hint, icon: Icon }) => {
           const active = pathname !== null && isActive(pathname, href);
           return (
             <li key={href}>
@@ -58,6 +62,8 @@ function NavLinks({ pathname, onNavigate }: { pathname: string | null; onNavigat
 /** Left sidebar on desktop; a top bar with a menu button on phones and tablets. */
 export function AppShell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
+  const user = usePortalUser();
+  const account = <div className="space-y-2 px-3 text-sm text-white"><p className="font-semibold">{user?.name}</p><p className="text-xs text-white/60">{user && ROLES[user.role].label}</p><div className="flex gap-4"><Link href="/change-password" className="underline">Password</Link><SignOut /></div></div>;
 
   useEffect(() => {
     if (!open) return;
@@ -74,6 +80,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Suspense fallback={<NavLinks pathname={null} />}>
             <NavList />
           </Suspense>
+          {account}
           <p className="mt-auto px-3 text-xs leading-relaxed text-white/50">
             This portal prepares quotations only. It does not book or take payment.
           </p>
@@ -98,6 +105,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Suspense fallback={<NavLinks pathname={null} />}>
             <NavList onNavigate={() => setOpen(false)} />
           </Suspense>
+          {account}
         </div>
       )}
 

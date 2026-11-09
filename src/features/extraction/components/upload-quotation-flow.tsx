@@ -14,14 +14,14 @@ export function UploadQuotationFlow() {
       documentLabel="the supplier quotation"
       dropLabel="Drag the supplier quotation(s) here"
       endpoint="/api/quotations/extract"
-      onExtracted={(result, files) => {
+      onExtracted={async (result, files) => {
         const quotation = quotationFromExtraction(result.data, { fileName: files.map((f) => f.name).join(", "), demo: result.demo });
-        quotationStore.save(quotation);
+        await quotationStore.save(quotation);
         return `/quotations/${quotation.id}`;
       }}
-      onManual={() => {
+      onManual={async () => {
         const quotation = createEmptyQuotation("manual");
-        quotationStore.save(quotation);
+        await quotationStore.save(quotation);
         return `/quotations/${quotation.id}`;
       }}
       manualText="You can still make a quotation. Type in the flights and price yourself."

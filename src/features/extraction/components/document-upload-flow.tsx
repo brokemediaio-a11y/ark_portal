@@ -23,9 +23,9 @@ export interface DocumentUploadFlowProps<T> {
   dropLabel: string;
   endpoint: string;
   /** Saves the result and returns the page to open next. */
-  onExtracted: (result: Success<T>, files: File[]) => string;
+  onExtracted: (result: Success<T>, files: File[]) => string | Promise<string>;
   /** Creates an empty record and returns the page to open. */
-  onManual: () => string;
+  onManual: () => string | Promise<string>;
   manualText: string;
 }
 
@@ -67,7 +67,10 @@ export function DocumentUploadFlow<T>({ title, intro, documentLabel, dropLabel, 
   const read = async () => {
     setRejection(null);
     const result = await run(files);
-    if (result) router.push(onExtracted(result, files));
+    if (result) {
+      try { router.push(await onExtracted(result, files)); }
+      catch (error) { setRejection(error instanceof Error ? error.message : "Could not save. Please try again."); cancel(); }
+    }
   };
 
   const reset = () => {
@@ -86,6 +89,7 @@ export function DocumentUploadFlow<T>({ title, intro, documentLabel, dropLabel, 
         <p className="mt-1 text-ink-muted">{intro}</p>
       </div>
 
+      {rejection && <Alert tone="error">{rejection}</Alert>}
       <Card>
         <CardHeader
           icon={ScanText}
@@ -132,7 +136,7 @@ export function DocumentUploadFlow<T>({ title, intro, documentLabel, dropLabel, 
                     <Button size="sm" icon={RotateCcw} onClick={read}>Try again</Button>
                   )}
                   <Button size="sm" variant="secondary" onClick={reset}>Start over with other files</Button>
-                  <Button size="sm" variant="secondary" icon={PencilLine} onClick={() => router.push(onManual())}>Enter details manually</Button>
+                  <Button size="sm" variant="secondary" icon={PencilLine} onClick={async () => { try { router.push(await onManual()); } catch (error) { setRejection(error instanceof Error ? error.message : "Could not save."); } }}>Enter details manually</Button>
                 </>
               }
             >
@@ -141,7 +145,6 @@ export function DocumentUploadFlow<T>({ title, intro, documentLabel, dropLabel, 
           ) : (
             <>
               <FileDropzone onFile={addFile} onReject={setRejection} label={dropLabel} />
-              {rejection && <Alert tone="error">{rejection}</Alert>}
               <div className="flex flex-col gap-3 rounded-xl bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-ink-muted">
                   {files.length === 0
@@ -163,7 +166,7 @@ export function DocumentUploadFlow<T>({ title, intro, documentLabel, dropLabel, 
             <h2 id="no-file-heading" className="font-display text-lg font-bold text-brand">Don&apos;t have a file?</h2>
             <p className="mt-0.5 text-sm text-ink-muted">{manualText}</p>
           </div>
-          <Button variant="secondary" size="lg" icon={PencilLine} onClick={() => router.push(onManual())} className="shrink-0">
+          <Button variant="secondary" size="lg" icon={PencilLine} onClick={async () => { try { router.push(await onManual()); } catch (error) { setRejection(error instanceof Error ? error.message : "Could not save."); } }} className="shrink-0">
             Type the details in yourself
           </Button>
         </section>

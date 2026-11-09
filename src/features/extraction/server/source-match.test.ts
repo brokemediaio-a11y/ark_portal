@@ -6,6 +6,8 @@ describe("flightNumberInSource", () => {
     expect(flightNumberInSource("TK 1954", "TURKISH AIRLINES, TK1954")).toBe(true);
     expect(flightNumberInSource("TK1954", "TURKISH AIRLINES, TK 1954")).toBe(true);
     expect(flightNumberInSource("EY 78", "EY0078 to Abu Dhabi")).toBe(true);
+    expect(flightNumberInSource("QR 273", "QR | 273 | 08:25 | 13:20")).toBe(true);
+    expect(flightNumberInSource("QR 274", "QR | 273 | 08:25 | 13:20")).toBe(false);
   });
 
   it("never accepts different digits, or a number inside a longer one", () => {

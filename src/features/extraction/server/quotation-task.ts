@@ -1,6 +1,7 @@
 import "server-only";
 import { extractionSchema, type Extraction } from "../schema";
 import { resolveAssumedYears } from "./assumed-years";
+import { orderFlightsBySource } from "./flight-order";
 import type { ExtractionTask } from "./extract-service";
 import { groundInSourceText } from "./grounding";
 import { buildQuotationSystemPrompt, QUOTATION_USER_INSTRUCTION } from "./prompt";
@@ -29,6 +30,6 @@ export const quotationTask: ExtractionTask<Extraction> = {
       if (data.totalAmount !== null && !reads.every((read) => amountInSource(data.totalAmount!, read)))
         data = withFlags(data, [disagreement("sourceTotal", String(data.totalAmount))]);
     }
-    return withFlags(checkItinerary(resolveAssumedYears(data, today, documents.source)), []);
+    return withFlags(checkItinerary(orderFlightsBySource(resolveAssumedYears(data, today, documents.source), documents.source)), []);
   },
 };

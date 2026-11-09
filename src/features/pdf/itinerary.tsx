@@ -1,7 +1,8 @@
-import { G, Image, Path, StyleSheet, Svg, Text, View } from "@react-pdf/renderer";
+import { G, Image, Line, Path, StyleSheet, Svg, Text, View } from "@react-pdf/renderer";
 import { brand } from "@/config/brand";
 import type { CustomerSegment } from "@/features/quotation/customer-view";
-import { PAGE_PADDING_X, PLANE_PATH, scriptFont } from "./brand-frame";
+import { PLANE_PATH, scriptFont } from "./brand-frame";
+import type { FlightConnection } from "@/features/quotation/journey-timing";
 
 /** Flight cards and page styles shared by the quotation and the e-ticket. */
 
@@ -9,7 +10,7 @@ const c = brand.colors;
 
 /** Small, quiet type with generous spacing: hierarchy comes from weight, tracking and rules, not size. */
 export const pdfStyles = StyleSheet.create({
-  page: { paddingTop: 32, paddingBottom: 28, paddingHorizontal: PAGE_PADDING_X, fontSize: 8.5, fontFamily: "Helvetica", color: c.ink },
+  page: { paddingTop: 32, fontSize: 8.5, fontFamily: "Helvetica", color: c.ink },
   titleRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", marginTop: 18, marginBottom: 12 },
   title: { fontSize: 15, fontFamily: "Helvetica-Bold", color: c.ink, letterSpacing: 0.3 },
   subtitle: { fontSize: 8.5, color: c.muted, marginTop: 3, letterSpacing: 0.4 },
@@ -47,12 +48,20 @@ const s = StyleSheet.create({
   when: { fontSize: 7.5, marginTop: 3 },
   routeBlock: { width: 110, alignItems: "center" },
   duration: { fontSize: 7.5, fontFamily: "Helvetica-Bold", color: c.ink, marginBottom: 2 },
+  durationMissing: { fontSize: 6, color: c.muted, marginBottom: 2 },
   routeLine: { width: 92, height: 11, justifyContent: "center" },
   arrowLine: { width: 92, height: 0.75, backgroundColor: c.accent },
   routePlane: { position: "absolute", right: 0, top: 0, width: 11, height: 11 },
   stops: { fontSize: 6.5, color: c.muted, marginTop: 2 },
   details: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 10, paddingBottom: 7 },
   detail: { fontSize: 6.5, color: c.muted, marginRight: 12, letterSpacing: 0.2 },
+  connection: { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, marginTop: 2, marginBottom: 10 },
+  dottedLine: { flex: 1, height: 2 },
+  connectionBadge: { flexDirection: "row", alignItems: "center", backgroundColor: c.surface, borderRadius: 20, paddingVertical: 5, paddingHorizontal: 10, marginHorizontal: 10, maxWidth: 300 },
+  connectionIcon: { width: 25, height: 25, borderRadius: 12.5, borderWidth: 0.6, borderColor: c.accent, backgroundColor: "#FFF6E7", alignItems: "center", justifyContent: "center", marginRight: 8 },
+  connectionCopy: { flexShrink: 1 },
+  connectionLabel: { fontSize: 5.5, letterSpacing: 0.9, color: c.muted, textTransform: "uppercase", marginBottom: 3 },
+  connectionTime: { fontSize: 8, fontFamily: "Helvetica-Bold", color: c.ink },
 });
 
 function Point({ point, align }: { point: CustomerSegment["from"]; align: "left" | "right" }) {
@@ -71,7 +80,7 @@ function Point({ point, align }: { point: CustomerSegment["from"]; align: "left"
 function Route({ segment }: { segment: CustomerSegment }) {
   return (
     <View style={s.routeBlock}>
-      {segment.duration && <Text style={s.duration}>{segment.duration}</Text>}
+      <Text style={segment.duration ? s.duration : s.durationMissing}>{segment.duration ?? "Duration unavailable"}</Text>
       <View style={s.routeLine}>
         <View style={s.arrowLine} />
         <Svg viewBox="0 0 24 24" style={s.routePlane}>
@@ -120,6 +129,39 @@ export function FlightCard({ segment, logo }: { segment: CustomerSegment; logo: 
       )}
     </View>
   );
+}
+
+function DottedLine() {
+  return <Svg viewBox="0 0 160 2" preserveAspectRatio="none" style={s.dottedLine}><Line x1="0" y1="1" x2="160" y2="1" stroke={c.primary} strokeWidth={1} strokeDasharray="2 4" strokeLinecap="round" /></Svg>;
+}
+
+function ConnectionSeparator({ connection }: { connection: FlightConnection }) {
+  const { kind, location, duration } = connection;
+  const label = kind === "transfer" ? "Change of airport" : kind === "stay" ? `Stay in ${location}` : location ? `Connection in ${location}` : "Next flight";
+  const detail = kind === "transfer" ? location : kind === "invalid" ? "Check connection dates and times" : duration ? `${duration} ${kind === "stay" ? "between flights" : "layover"}` : "Connection time unavailable";
+  return (
+    <View style={s.connection} wrap={false}>
+      <DottedLine />
+      <View style={s.connectionBadge}>
+        <View style={s.connectionIcon}>
+          <Svg viewBox="0 0 24 24" style={{ width: 13, height: 13 }}><G transform="rotate(45 12 12)"><Path d={PLANE_PATH} fill={c.accent} /></G></Svg>
+        </View>
+        <View style={s.connectionCopy}>
+          <Text style={[s.connectionLabel, scriptFont(label)]}>{label}</Text>
+          <Text style={s.connectionTime}>{detail}</Text>
+        </View>
+      </View>
+      <DottedLine />
+    </View>
+  );
+}
+
+/** One shared itinerary keeps the duration and connection presentation identical in both PDFs. */
+export function FlightItinerary({ segments, airlineLogos }: { segments: CustomerSegment[]; airlineLogos: Record<string, string> }) {
+  return <View>{segments.map((segment, index) => <View key={index}>
+    {index > 0 && segment.connectionBefore && <ConnectionSeparator connection={segment.connectionBefore} />}
+    <FlightCard segment={segment} logo={segment.airlineCode ? airlineLogos[segment.airlineCode] : undefined} />
+  </View>)}</View>;
 }
 
 export function Meta({ label, value }: { label: string; value: string | null }) {

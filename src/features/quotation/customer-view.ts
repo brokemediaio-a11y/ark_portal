@@ -1,6 +1,7 @@
 import { brand } from "@/config/brand";
 import { calculatePrice, formatMoney } from "./pricing";
 import type { FlightSegment, Passengers, Quotation } from "./schema";
+import { connectionBetween, flightDuration, type FlightConnection } from "./journey-timing";
 
 /**
  * The customer-facing view of a quotation. The PDF, email and WhatsApp text are
@@ -32,6 +33,7 @@ export interface CustomerPoint {
 }
 
 export interface CustomerSegment {
+  connectionBefore?: FlightConnection | null;
   title: string;
   flight: string | null;
   airlineName: string | null;
@@ -87,19 +89,20 @@ export function airlineCodeOf(s: Pick<FlightSegment, "airlineCode" | "flightNumb
 }
 
 /** One flight as the customer sees it; e-tickets add terminals and their own details. */
-export function toCustomerSegment(s: FlightSegment, index: number): CustomerSegment {
+export function toCustomerSegment(s: FlightSegment, index: number, previous?: FlightSegment): CustomerSegment {
   // Show the code only when there's no name and the flight number doesn't already start with it.
   const codeInFlightNumber = Boolean(s.airlineCode && s.flightNumber?.toUpperCase().startsWith(s.airlineCode));
   const airline = s.airlineName ?? (codeInFlightNumber ? null : s.airlineCode);
   const details = [s.cabin, s.baggage && `Baggage: ${s.baggage}`].filter((v): v is string => Boolean(v));
 
   return {
+    connectionBefore: previous ? connectionBetween(previous, s) : null,
     title: `Flight ${index + 1}`,
     flight: [airline, flightLabel(s)].filter(Boolean).join(" · ") || null,
     airlineName: s.airlineName,
     airlineCode: airlineCodeOf(s),
     flightNumber: flightLabel(s),
-    duration: s.duration,
+    duration: flightDuration(s),
     stops: s.stops === null ? null : s.stops === 0 ? "Non-stop" : `${s.stops} stop${s.stops > 1 ? "s" : ""}`,
     from: { code: s.originCode, name: s.originName, date: formatIsoDate(s.departureDate), time: s.departureTime, terminal: null },
     to: { code: s.destinationCode, name: s.destinationName, date: formatIsoDate(s.arrivalDate), time: s.arrivalTime, terminal: null },
@@ -134,7 +137,7 @@ export function buildCustomerQuote(q: Quotation, now = new Date(q.createdAt)): C
     validUntil: formatDate(validUntil),
     customerName: q.customer.name,
     travellers: describeTravellers(q.passengers),
-    segments: q.segments.map(toCustomerSegment),
+    segments: q.segments.map((segment, index) => toCustomerSegment(segment, index, q.segments[index - 1])),
     routeSummary: routeSummaryOf(q.segments),
     totalPrice: formatMoney(price?.sellingTotal ?? null, q.currency),
     notes: q.notes,

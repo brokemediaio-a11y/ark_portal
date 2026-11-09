@@ -13,7 +13,8 @@ A web app that helps Ark Travelers staff turn supplier flight quotations (PDFs, 
 | Option 2: live fare search (Duffel, test or live mode) → select → re-price → same editor and PDF | ✅ Done |
 | Option 2 follow-up: traveller details, bags/seats, TEST booking (Duffel guide §9–11) | ⏳ Awaiting go-ahead |
 | Booking and payment | ⏳ Not built: the app only searches and quotes |
-| Server database, login, email sending | ⏳ Later (see *Limitations*) |
+| Login, roles, user management, server database | ✅ Implemented (SQLite, persistent server) |
+| Email sending | ⏳ Drafts only |
 
 ## How it works (Option 2: search flights)
 
@@ -86,9 +87,11 @@ A web app that helps Ark Travelers staff turn supplier flight quotations (PDFs, 
    - 🟡 **Yellow** fields are worth checking. These are AI flags, which show the source text.
    - A checklist jumps straight to each problem.
 4. **Customer & price.** Enter the customer details and the supplier price, then add a fixed or percentage markup. The calculation is shown on screen.
-5. **Preview & send.** A live A4 PDF preview, PDF download, a pre-filled email draft, a WhatsApp chat link, and a "mark as sent" button.
+5. **Preview & send.** A live PDF preview (A4 width, content-sized height), PDF download, a pre-filled email draft, a WhatsApp chat link, and a "mark as sent" button.
 
-Quotations autosave in the browser and are listed on the home page.
+Quotations autosave to the server under the signed-in account and are listed on the home page.
+
+Quotation and ticket PDFs show flight durations above each route line and dotted connection badges between flights. Printed/provider durations take precedence; missing durations are calculated using airport time zones and the travel date's daylight saving rules. Unknown or ambiguous timestamps are labelled unavailable. Long gaps are labelled as destination stays, and airport changes are shown separately. The offline timezone dataset and its MIT attribution are in `src/config/airport-timezones.*`.
 
 ### Pricing rule (prototype, to be confirmed with Ark Travelers)
 
@@ -121,12 +124,13 @@ Both PDFs share one header and footer (`features/pdf/brand-frame.tsx`), configur
 
 ## Getting started
 
-Requirements: Node.js 20.9+ (developed on Node 24).
+Requirements: Node.js 22.13+ (uses built-in SQLite) and one persistent server/VPS.
 
 ```bash
 npm install
 cp .env.example .env.local   # then edit .env.local
-npm run dev                  # http://localhost:3000
+npm run setup:key            # generates a one-time setup key in .env.local
+npm run dev                  # http://localhost:3000/login
 ```
 
 To try the app **without an AI key**, set `EXTRACTION_PROVIDER=mock` in `.env.local`. Every upload then returns the same sample data, labelled **DEMO DATA** in the app and on the PDF.
@@ -156,6 +160,31 @@ To try the app **without an AI key**, set `EXTRACTION_PROVIDER=mock` in `.env.lo
 | `npm test` | Unit tests (Vitest) |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript |
+
+## Login and employee access
+
+Open `/login`, enter the setup key printed by `npm run setup:key`, and create the client's administrator account. Setup is disabled once the first account exists. Remove `PORTAL_SETUP_KEY` from the server environment after setup. There is no public registration.
+
+The administrator opens **Users & access**, enters an employee's name and email, and selects a role. The app generates a temporary password and provides **Copy login details**. Share these credentials privately. Employees must replace temporary passwords on first login. Passwords require at least 12 characters and are salted and hashed with scrypt; they cannot be retrieved later.
+
+| Role | Access |
+| --- | --- |
+| PDF Converter | Upload, edit, and download their own quotations and branded e-tickets |
+| Travel Agent | Converter tools plus flight search; own documents only |
+| Manager | Agent tools plus deletion of their own documents; no access to other employees' records |
+| Administrator | All portal tools, all documents, user creation, role changes, disabling, password resets, and recent activity |
+
+All employees' documents are private to their accounts. Administrators can view, edit, and delete agency records. Role checks protect the API as well as navigation. Admins cannot disable or demote themselves, and at least one administrator must remain active. Changing an account's role, email or status revokes its sessions. Password resets revoke sessions immediately and require another password change. Sessions expire after eight hours. Sign-in attempts are limited per email with durable database counters; extraction and flight API limits are per user, per process.
+
+The first administrator can use **Import from this browser** on the users page to claim existing browser-local quotations and tickets. Import skips existing server records and preserves the old browser copy. Import only the agency's records, then clear old localStorage on shared employee computers; existing browser copies cannot be protected retroactively by server permissions.
+
+### Hosting and backups
+
+Set `PORTAL_DATABASE_PATH` to a private, persistent disk path (default `data/portal.sqlite`). Run one application instance, outside the public/static directory, with HTTPS in production. The SQLite directory must be writable only by the service account. Back up the database with SQLite's backup tooling or stop the service and copy the database together with its `-wal` and `-shm` files. Do not deploy this SQLite setup on ephemeral/serverless storage. Production cookies are Secure and require HTTPS; a reverse proxy must preserve the public request origin for write checks.
+
+No email is sent automatically. Administrators manually share temporary credentials and handle password resets. MFA, invitation emails, password recovery emails, custom role editing, and price/markup approvals are not included. The audit screen records sign-ins, account changes, document creation and deletion, rather than individual document field edits or browser PDF downloads.
+
+The API contract is documented in `src/features/auth/contract.md`. Access-boundary tests exercise authentication, ownership, role restrictions, session revocation, resets, bootstrap, and login throttling without calling paid providers.
 
 ## Choosing the AI model (cost)
 
@@ -195,7 +224,7 @@ src/
     quotation/                  Data model (Zod), pricing, review rules, storage, editor UI
     flights/                    Search types, airport picker, results UI
       server/providers/duffel/  Duffel client, test/live guard, normalisation, real-response fixtures
-    pdf/                        Branded A4 PDF template (@react-pdf/renderer)
+    pdf/                        Branded content-sized PDF templates (@react-pdf/renderer)
 ```
 
 To add another flight data source (for example a GDS), implement `FlightProvider` in `src/features/flights/server/providers/` and register it in `providers/index.ts`. The UI and quotation code only use the normalised `FlightOffer` type.
@@ -211,11 +240,11 @@ To add another AI backend, implement `ExtractionProvider` in `src/features/extra
 
 ## Limitations / before going live
 
-- **No login yet.** Don't deploy publicly with real customer data until authentication is added.
-- **Storage is per-browser (localStorage).** Quotations aren't shared between computers. `src/features/quotation/storage.ts` is the single place to swap in a database (e.g. PostgreSQL) via an API.
+- **Login and RBAC are implemented.** Use HTTPS, persistent storage, and the administrator setup above.
+- **Storage is SQLite on a persistent server.** Documents follow accounts across computers; employees only access their own records. Browser-only records can be imported by the administrator.
 - **Email and WhatsApp** open pre-filled drafts. Staff attach the downloaded PDF themselves, and nothing is sent automatically.
 - **Branding** (logo, colours, contact details, terms, validity days, quote number format) uses placeholders in `src/config/brand.ts` until Ark Travelers approves the real values. To use a logo, put it in `public/` and set `logoPath`.
-- There is no rate limiting on the extraction endpoint yet. Add it before public deployment to control AI costs.
+- Extraction and flight search are rate limited per user. Configure spending limits at the provider as an additional cost control.
 - Caches and rate limits are in memory, per server instance. On several instances or serverless platforms, use a shared store such as Redis.
 - The quotation's validity (`quoteValidityDays` in `brand.ts`) is agency policy. Duffel holds a fare price for a much shorter time (shown in the editor), so re-check before booking.
 

@@ -1,9 +1,10 @@
+import { apiAccess } from "@/features/auth/server";
 import { limitOffers } from "@/features/flights/server/offer-limit";
 import { FlightProviderError, getFlightProvider } from "@/features/flights/server/providers";
 import { parseSearchRequest } from "@/features/flights/server/search-service";
 import type { FlightSearchResponse } from "@/features/flights/schema";
 import { localToday } from "@/lib/dates";
-import { clientKey, createRateLimiter } from "@/lib/rate-limit";
+import { createRateLimiter } from "@/lib/rate-limit";
 
 export const maxDuration = 60;
 
@@ -14,8 +15,9 @@ const fail = (e: FlightProviderError) =>
   Response.json({ ok: false, error: e.message, code: e.code, field: e.field } satisfies FlightSearchResponse, { status: e.status });
 
 export async function POST(request: Request) {
+  const access = await apiAccess(request, "flights"); if (access.response) return access.response;
   try {
-    const rate = limiter(clientKey(request));
+    const rate = limiter(access.user.id);
     if (!rate.ok)
       throw new FlightProviderError("rate_limited", `Too many searches. Please wait ${rate.retryAfterSeconds} seconds and try again.`, 429);
 

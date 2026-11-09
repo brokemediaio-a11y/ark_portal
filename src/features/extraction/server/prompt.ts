@@ -26,6 +26,9 @@ If the text contains <document_1>, <document_2>…, they are separate files uplo
 If a document contains <reading_1> and <reading_2>, they are two independent OCR readings of the SAME document, so each flight appears in both; output it once. If a value appears in only one reading, use it, without flagging it. Only if both readings show a value and they differ, use reading 1 and add an uncertainFields entry with the reason written for office staff, e.g. "The document reads as 3h 25min or 3h 35min. Please check the original."
 
 Keeping flights separate:
+- Preserve the source's explicitly numbered flight sequence: FLIGHT 1, FLIGHT 2, FLIGHT 3, etc. These are itinerary leg numbers, not the airline's flight number. Match each numbered heading to its own route and flight details, even when the PDF text lists detail blocks in a different order.
+- Never group or reorder legs by airline, carrier, flight number, departure airport or the order in which PDF text objects happen to appear. For example, AMS→DOH, DOH→KBL, KBL→DOH, DOH→AMS must remain in that sequence; do not group the two QR legs together.
+- If there are no numbered leg headings, follow the document's visual itinerary sequence, outbound through connections and then return. Across repeated passenger pages, retain the first complete itinerary and merge duplicates; do not append return legs in a different order. If the sequence is unclear or contradictory, flag "segments" for staff to check instead of silently choosing a different order.
 - Each flight has its own block of text. Take every value of a segment only from that flight's own block: its flight number, airports, dates, times, duration and cabin all belong together.
 - Never move a value from one flight to another. Don't assume a return flight number from the outbound one, or that flight numbers run in sequence.
 - A flight repeated in several documents or pages (e.g. one ticket page per passenger) is listed once.

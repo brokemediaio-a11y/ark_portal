@@ -8,7 +8,9 @@ import { QuotationWorkspace } from "./quotation-workspace";
 
 export function QuotationLoader() {
   const { id } = useParams<{ id: string }>();
-  const map = useQuotationMap();
+  const { records: map, error, retry } = useQuotationMap();
+
+  if (error) return <div role="alert" className="space-y-3 p-6"><p>{error}</p><button onClick={retry} className="text-brand underline">Try again</button></div>;
 
   if (!map) {
     return (
@@ -18,14 +20,14 @@ export function QuotationLoader() {
     );
   }
 
-  const quotation = map[id];
+  const quotation = Object.hasOwn(map, id) ? map[id] : undefined;
   if (!quotation) {
     return (
       <div className="mx-auto max-w-md space-y-4 py-16 text-center">
         <FileQuestion size={40} className="mx-auto text-ink-faint" />
         <h1 className="text-xl font-semibold text-ink">Quotation not found</h1>
         <p className="text-sm text-ink-muted">
-          It may have been deleted, or it was created in a different browser. Quotations are currently saved on this computer only.
+          It may have been deleted, or your account does not have access to it.
         </p>
         <ButtonLink href="/">Back to all quotations</ButtonLink>
       </div>

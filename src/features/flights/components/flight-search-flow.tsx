@@ -27,7 +27,7 @@ export function FlightSearchFlow() {
   const [values, setValues] = useState(INITIAL_SEARCH_VALUES);
 
   const createQuotation = useCallback(
-    (latest: Extract<OfferResponse, { ok: true }>) => {
+    async (latest: Extract<OfferResponse, { ok: true }>) => {
       const p = values.passengers;
       const quotation = quotationFromFlightOffer(latest.offer, {
         providerLabel: latest.provider.label,
@@ -38,7 +38,7 @@ export function FlightSearchFlow() {
           infants: p.infantAges.length || null,
         },
       });
-      quotationStore.save(quotation);
+      await quotationStore.save(quotation);
       router.push(`/quotations/${quotation.id}`);
     },
     [values.passengers, router],

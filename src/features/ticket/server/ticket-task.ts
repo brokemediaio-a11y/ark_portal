@@ -1,6 +1,7 @@
 import "server-only";
 import type { UncertainField as Flag } from "@/features/extraction/schema";
 import { resolveAssumedYears } from "@/features/extraction/server/assumed-years";
+import { orderFlightsBySource } from "@/features/extraction/server/flight-order";
 import type { ExtractionTask } from "@/features/extraction/server/extract-service";
 import { groundSegment, notPrinted } from "@/features/extraction/server/grounding";
 import { sharedRules } from "@/features/extraction/server/prompt";
@@ -142,6 +143,6 @@ export const ticketTask: ExtractionTask<TicketExtraction> = {
   verify(raw, documents, today) {
     let data = groundTicket(mergeRepeatedFlights(raw), documents.source);
     if (documents.reads) data = checkTicketAgainstReads(data, documents.reads);
-    return withFlags(checkItinerary(resolveAssumedYears(data, today, documents.source)), []);
+    return withFlags(checkItinerary(orderFlightsBySource(resolveAssumedYears(data, today, documents.source), documents.source)), []);
   },
 };

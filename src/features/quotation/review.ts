@@ -90,12 +90,30 @@ export function reviewSegment(segment: FlightSegment, index: number, today: stri
   return issues;
 }
 
+/** Adjacent connecting flights use the same airport's local time, so this check needs no time-zone inference. */
+export function reviewFlightSequence(segments: FlightSegment[]): ReviewIssue[] {
+  return segments.flatMap((segment, index): ReviewIssue[] => {
+    const previous = segments[index - 1];
+    if (!previous?.destinationCode || !segment.originCode) return [];
+    if (previous.destinationCode !== segment.originCode) return [{
+      field: `segments.${index}.originCode`, level: "warning",
+      message: `Flight ${index + 1} leaves ${segment.originCode}, but flight ${index} arrives in ${previous.destinationCode}. Check the flight sequence or confirm the separate transfer.`,
+    }];
+    if (!previous.arrivalDate || !previous.arrivalTime || !segment.departureDate || !segment.departureTime) return [];
+    const arrival = `${previous.arrivalDate}T${previous.arrivalTime}`;
+    const departure = `${segment.departureDate}T${segment.departureTime}`;
+    return departure < arrival ? [{ field: `segments.${index}.departureTime`, level: "blocking",
+      message: `Flight ${index + 1} leaves ${segment.originCode} before flight ${index} arrives. Correct the dates, times or flight sequence.` }] : [];
+  });
+}
+
 export function reviewQuotation(q: Quotation, today: string = localToday()): ReviewIssue[] {
   const issues: ReviewIssue[] = [];
 
   if (q.segments.length === 0)
     issues.push({ field: "segments", level: "blocking", message: "Add at least one flight." });
   q.segments.forEach((s, i) => issues.push(...reviewSegment(s, i, today)));
+  issues.push(...reviewFlightSequence(q.segments));
 
   if (!q.currency)
     issues.push({ field: "currency", level: "blocking", message: "Currency is missing." });

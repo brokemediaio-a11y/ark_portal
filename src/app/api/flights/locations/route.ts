@@ -1,15 +1,17 @@
+import { apiAccess } from "@/features/auth/server";
 import { connection, type NextRequest } from "next/server";
 import { FlightProviderError, getFlightProvider } from "@/features/flights/server/providers";
 import type { LocationsResponse } from "@/features/flights/schema";
-import { clientKey, createRateLimiter } from "@/lib/rate-limit";
+import { createRateLimiter } from "@/lib/rate-limit";
 
 const limiter = createRateLimiter({ limit: 240, windowMs: 60_000 });
 
 export async function GET(request: NextRequest) {
   // Request-time only; must run before the try so Next's prerender bail-out isn't swallowed.
   await connection();
+  const access = await apiAccess(request, "flights"); if (access.response) return access.response;
   try {
-    if (!limiter(clientKey(request)).ok)
+    if (!limiter(access.user.id).ok)
       throw new FlightProviderError("rate_limited", "Too many requests. Please slow down.", 429);
     const query = (request.nextUrl.searchParams.get("q") ?? "").slice(0, 60);
     const places = await getFlightProvider().searchPlaces(query);

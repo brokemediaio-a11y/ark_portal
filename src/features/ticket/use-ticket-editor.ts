@@ -8,7 +8,7 @@ import { ticketStore } from "./storage";
 
 const OPTIONS = {
   save: (t: Ticket) => {
-    ticketStore.save(t);
+    return ticketStore.save(t);
   },
   review: (t: Ticket) => reviewTicket(t),
   /** The next leg usually starts where the previous one landed. */
