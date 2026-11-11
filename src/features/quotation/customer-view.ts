@@ -20,6 +20,8 @@ export interface CustomerQuote {
   routeSummary: string;
   totalPrice: string;
   notes: string | null;
+  /** Dari terms, printed beside the English ones. */
+  termsDari: string[];
   fareConditions: string | null;
   terms: string[];
 }
@@ -45,6 +47,8 @@ export interface CustomerSegment {
   from: CustomerPoint;
   to: CustomerPoint;
   details: string[];
+  /** The flight card's "Baggage" block; null when neither allowance is known. */
+  baggage: { handCarry: string | null; checkIn: string | null } | null;
 }
 
 /** "2026-12-10" → "Thu, 10 Dec 2026" without any timezone shifting. */
@@ -93,7 +97,7 @@ export function toCustomerSegment(s: FlightSegment, index: number, previous?: Fl
   // Show the code only when there's no name and the flight number doesn't already start with it.
   const codeInFlightNumber = Boolean(s.airlineCode && s.flightNumber?.toUpperCase().startsWith(s.airlineCode));
   const airline = s.airlineName ?? (codeInFlightNumber ? null : s.airlineCode);
-  const details = [s.cabin, s.baggage && `Baggage: ${s.baggage}`].filter((v): v is string => Boolean(v));
+  const details = [s.cabin].filter((v): v is string => Boolean(v));
 
   return {
     connectionBefore: previous ? connectionBetween(previous, s) : null,
@@ -107,8 +111,12 @@ export function toCustomerSegment(s: FlightSegment, index: number, previous?: Fl
     from: { code: s.originCode, name: s.originName, date: formatIsoDate(s.departureDate), time: s.departureTime, terminal: null },
     to: { code: s.destinationCode, name: s.destinationName, date: formatIsoDate(s.arrivalDate), time: s.arrivalTime, terminal: null },
     details,
+    baggage: s.handCarry || s.checkIn ? { handCarry: s.handCarry, checkIn: s.checkIn } : null,
   };
 }
+
+/** One note per line, blank lines dropped. */
+export const noteLines = (text: string | null) => (text ?? "").split("\n").map((t) => t.trim()).filter(Boolean);
 
 /** "AMS – IST – KBL". En dash, not an arrow: the PDF's built-in font has no arrow glyph. */
 export function routeSummaryOf(segments: FlightSegment[]): string {
@@ -142,7 +150,8 @@ export function buildCustomerQuote(q: Quotation, now = new Date(q.createdAt)): C
     totalPrice: formatMoney(price?.sellingTotal ?? null, q.currency),
     notes: q.notes,
     fareConditions: q.fareConditions,
-    terms: (q.termsText ?? "").split("\n").map((t) => t.trim()).filter(Boolean),
+    terms: noteLines(q.termsText),
+    termsDari: noteLines(q.termsTextDari),
   };
 }
 

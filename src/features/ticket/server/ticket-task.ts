@@ -29,7 +29,7 @@ Ticket fields:
 - bookingClass: the reservation / booking class letter(s) as printed (e.g. "K", "Y1"); never the fare basis (e.g. "TVFRRTIN"). cabin: only a cabin name that is printed (e.g. "Economy"); never a class letter.
 - airlineName: only a printed airline name; a carrier code like "RQ" goes in airlineCode, never in airlineName.
 - bookingStatus: as printed (e.g. "OK", "CONFIRMED").
-- baggage: the allowance as printed, including cabin baggage if printed (e.g. "30 kg, cabin 5 kg").
+- handCarry and checkIn: the cabin and checked allowances as printed (e.g. "Baggage Allowance 30 kg, Cabin Baggage Allowance 5 kg" → checkIn "30 kg", handCarry "5 kg").
 - fareConditions: refund or change conditions exactly as printed, or null.
 - If the documents contain no ticket or flight information, set documentHasTicketDetails to false.`;
 }

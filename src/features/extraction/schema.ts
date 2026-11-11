@@ -25,7 +25,8 @@ export const extractedSegmentSchema = z.object({
   duration: text.describe("As written, e.g. 3h 15m"),
   stops: count,
   cabin: text.describe("e.g. Economy, Business"),
-  baggage: text.describe("Baggage allowance exactly as written"),
+  handCarry: text.describe("Hand carry / cabin / carry-on baggage allowance exactly as written"),
+  checkIn: text.describe("Checked / hold baggage allowance exactly as written"),
 });
 
 export const extractionSchema = z.object({

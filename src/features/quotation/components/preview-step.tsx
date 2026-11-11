@@ -4,28 +4,32 @@ import { CheckCheck, Copy, Download, Mail, MessageCircle, Send } from "lucide-re
 import { useMemo, useState } from "react";
 import { Button, buttonClasses } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
+import { SelectField } from "@/components/ui/form-field";
 import { brand } from "@/config/brand";
 import { downloadBlob, PdfPreviewCard } from "@/features/pdf/pdf-preview-card";
+import { layoutFileSuffix, PDF_LAYOUTS, type PdfLayout } from "@/features/pdf/layout";
 import { useQuotationPdf } from "@/features/pdf/use-quotation-pdf";
 import { buildCustomerQuote, buildShareMessage } from "../customer-view";
 import type { QuotationEditor } from "../use-quotation-editor";
 
-const pdfFileName = (quoteNumber: string) => `${brand.name.replace(/\s+/g, "-")}-Quotation-${quoteNumber}.pdf`;
+const pdfFileName = (quoteNumber: string, layout: PdfLayout) => `${brand.name.replace(/\s+/g, "-")}-Quotation-${quoteNumber}${layoutFileSuffix(layout)}.pdf`;
 
 const digitsOnly = (phone: string | null) => (phone ?? "").replace(/\D/g, "");
 
 export function PreviewStep({ editor }: { editor: QuotationEditor }) {
   const { quotation: q, update } = editor;
   const view = useMemo(() => buildCustomerQuote(q), [q]);
-  const pdf = useQuotationPdf(view);
+  const [layout, setLayout] = useState<PdfLayout>("desktop");
+  const pdf = useQuotationPdf(view, layout);
+  const fileName = pdfFileName(q.quoteNumber, layout);
   const message = useMemo(() => buildShareMessage(view), [view]);
   const [copied, setCopied] = useState(false);
-  const [downloaded, setDownloaded] = useState(false);
+  const [downloaded, setDownloaded] = useState<PdfLayout | null>(null);
 
   const download = () => {
     if (!pdf.blob) return;
-    downloadBlob(pdf.blob, pdfFileName(q.quoteNumber));
-    setDownloaded(true);
+    downloadBlob(pdf.blob, fileName);
+    setDownloaded(layout);
     if (q.status === "draft") update("status", "ready");
   };
 
@@ -52,10 +56,18 @@ export function PreviewStep({ editor }: { editor: QuotationEditor }) {
         <Card>
           <CardHeader icon={Download} title="1. Download the PDF" />
           <CardBody className="space-y-3">
-            <Button size="lg" variant="accent" icon={downloaded ? CheckCheck : Download} className="w-full" onClick={download} disabled={!pdf.blob}>
-              {downloaded ? "Downloaded — download again" : "Download PDF"}
+            <SelectField
+              label="PDF format"
+              hint="Mobile PDFs use phone-sized pages, so every flight card is readable without zooming."
+              value={layout}
+              onChange={(value) => value && setLayout(value)}
+              options={PDF_LAYOUTS}
+              placeholder={null}
+            />
+            <Button size="lg" variant="accent" icon={downloaded === layout ? CheckCheck : Download} className="w-full" onClick={download} disabled={!pdf.blob || pdf.loading}>
+              {downloaded === layout ? "Downloaded — download again" : layout === "mobile" ? "Download mobile PDF" : "Download desktop PDF"}
             </Button>
-            <p className="text-xs text-ink-muted">Saved as {pdfFileName(q.quoteNumber)}</p>
+            <p className="text-xs text-ink-muted">Saved as {fileName}</p>
           </CardBody>
         </Card>
 

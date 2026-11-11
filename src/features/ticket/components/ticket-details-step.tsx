@@ -94,6 +94,8 @@ export function TicketDetailsStep({ editor }: { editor: TicketEditor }) {
         <CardBody className="space-y-5">
           <TextAreaField label="Fare conditions" path="fareConditions" value={t.fareConditions} onChange={(v) => update("fareConditions", v)} hint="Copy refund/change rules only if the supplier printed them." />
           <TextAreaField label="Note to the traveller" path="notes" value={t.notes} onChange={(v) => update("notes", v)} placeholder="Optional" />
+          <TextAreaField label="Important information" path="infoText" rows={4} value={t.infoText} onChange={(v) => update("infoText", v)} hint="One point per line." />
+          <TextAreaField label="Important information in Dari" path="infoTextDari" rows={4} dir="rtl" value={t.infoTextDari} onChange={(v) => update("infoTextDari", v)} hint="Printed beside the English. One point per line." />
         </CardBody>
       </Card>
     </div>

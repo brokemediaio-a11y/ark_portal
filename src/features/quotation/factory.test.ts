@@ -21,7 +21,8 @@ const segment = (overrides: Partial<Extraction["segments"][number]> = {}): Extra
   duration: null,
   stops: 0,
   cabin: "Economy",
-  baggage: null,
+  handCarry: null,
+  checkIn: null,
   ...overrides,
 });
 
@@ -110,7 +111,7 @@ describe("quotationFromFlightOffer (real Duffel test-mode offer)", () => {
       ["EY 313", "KBL", "AUH", "2026-11-12", "15:00", "2026-11-12", "18:00"],
       ["EY 75", "AUH", "MAN", "2026-11-13", "14:00", "2026-11-13", "18:00"],
     ]);
-    expect(q.segments[0]).toMatchObject({ airlineName: "Etihad Airways", originName: "Manchester", cabin: "Economy", baggage: "No checked bag, 1 carry-on" });
+    expect(q.segments[0]).toMatchObject({ airlineName: "Etihad Airways", originName: "Manchester", cabin: "Economy", handCarry: "1 bag", checkIn: "None" });
   });
 });
 

@@ -43,6 +43,7 @@ export function CustomerPriceStep({ editor }: { editor: QuotationEditor }) {
           <CardBody className="space-y-4">
             <TextAreaField label="Note to the customer" path="notes" value={q.notes} onChange={(v) => update("notes", v)} placeholder="e.g. Seats are limited at this fare — please confirm soon." />
             <TextAreaField label="Terms" path="termsText" rows={4} value={q.termsText} onChange={(v) => update("termsText", v)} hint="One term per line." />
+            <TextAreaField label="Terms in Dari" path="termsTextDari" rows={4} dir="rtl" value={q.termsTextDari} onChange={(v) => update("termsTextDari", v)} hint="Printed beside the English terms. One term per line." />
           </CardBody>
         </Card>
       </div>

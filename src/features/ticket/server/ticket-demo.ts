@@ -16,7 +16,7 @@ export const DEMO_TICKET: TicketExtraction = {
     {
       airlineName: "Demo Airways", airlineCode: "DA", flightNumber: "DA 101", originCode: "ARN", originName: "Stockholm",
       destinationCode: "IST", destinationName: "Istanbul", departureDate: "2026-12-10", departureTime: "18:35",
-      arrivalDate: "2026-12-10", arrivalTime: "23:15", duration: null, stops: null, cabin: "Economy", baggage: "20 kg",
+      arrivalDate: "2026-12-10", arrivalTime: "23:15", duration: null, stops: null, cabin: "Economy", handCarry: "7 kg", checkIn: "20 kg",
       departureTerminal: "5", arrivalTerminal: null, bookingClass: "Y", bookingStatus: "OK",
     },
   ],

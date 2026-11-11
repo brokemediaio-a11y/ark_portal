@@ -35,6 +35,7 @@ export const brand = {
   social: [
     { network: "facebook", label: "Ark Travelers AB", url: "https://www.facebook.com/share/1E2TPstWMd/" },
     { network: "instagram", label: "@arktravelersab", url: "https://www.instagram.com/arktravelersab?dlrf=N3lndml6NjVzYzho" },
+    { network: "tiktok", label: "ArkTravelers", url: "https://www.tiktok.com/@arktravelersab?_r=1&_t=ZG-9BEpcTvTZIm" },
   ],
   /** Number of days a quotation is shown as valid. Placeholder policy. */
   quoteValidityDays: 3,
@@ -45,7 +46,22 @@ export const brand = {
     "This quotation is not a booking or reservation.",
     "Final terms and conditions to be confirmed by Ark Travelers.",
   ].join("\n"),
-  /** Printed at the end of every e-ticket. Placeholder wording until Ark Travelers approves it. */
+  /** Dari column beside the English, with its heading: quotations show terms, e-tickets important information. */
+  termsDariTitle: "شرایط و مقررات",
+  ticketNotesDariTitle: "معلومات مهم",
+  /** Default Dari terms for new quotations; staff can edit them per quotation. */
+  defaultTermsDari: [
+    "نرخ‌ها تابع موجودیت تکت بوده و ممکن است تا زمان صدور تکت تغییر کنند.",
+    "این نرخ‌نامه به منزله رزرو یا تأیید تکت نمی‌باشد.",
+    "شرایط و مقررات نهایی باید توسط شرکت آرک تراولرز تأیید گردد.",
+  ].join("\n"),
+  /** Default Dari important information for new e-tickets; staff can edit it per ticket. */
+  ticketNotesDari: [
+    "این تکت الکترونیکی شماست. لطفاً پاسپورت معتبر و ویزاهای مورد نیاز برای سفر خود را همراه داشته باشید.",
+    "لطفاً به‌موقع و به‌صورت آنلاین یا از طریق کانتر میدان هوایی چک‌این نمایید. روند چک‌این پروازهای بین‌المللی معمولاً ۶۰ دقیقه قبل از پرواز بسته می‌شود.",
+    "میزان بار مجاز و شرایط کرایه تکت توسط شرکت هوایی تعیین می‌گردد. برای تغییر تکت یا درخواست بازپرداخت پول، با شرکت آرک تراولرز تماس بگیرید.",
+  ].join("\n"),
+  /** Default English notes for new e-tickets; staff can edit them per ticket. */
   ticketNotes: [
     "This is your electronic ticket. Please carry a valid passport and any visas required for your journey.",
     "Check in online or at the airport counter in good time; international check-in usually closes 60 minutes before departure.",

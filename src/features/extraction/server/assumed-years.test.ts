@@ -10,7 +10,7 @@ function extraction(dates: [string, string][], flagged: number[]): Extraction {
     segments: dates.map(([dep, arr]) => ({
       airlineName: null, airlineCode: null, flightNumber: null, originCode: null, originName: null,
       destinationCode: null, destinationName: null, departureDate: dep, departureTime: null,
-      arrivalDate: arr, arrivalTime: null, duration: null, stops: null, cabin: null, baggage: null,
+      arrivalDate: arr, arrivalTime: null, duration: null, stops: null, cabin: null, handCarry: null, checkIn: null,
     })),
     passengers: { adults: 1, children: null, infants: null },
     currency: null, baseAmount: null, taxAmount: null, totalAmount: null, fareConditions: null,

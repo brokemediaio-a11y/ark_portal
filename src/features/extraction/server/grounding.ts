@@ -48,7 +48,7 @@ export function groundSegment<S extends ExtractedSegment>(segment: S, index: num
   }
 
   // Descriptive values: drop quietly, staff can fill them in.
-  for (const key of ["airlineName", "originName", "destinationName", "cabin", "baggage"] as const) {
+  for (const key of ["airlineName", "originName", "destinationName", "cabin", "handCarry", "checkIn"] as const) {
     const value = segment[key];
     if (value && !textInSource(value, source)) out[key] = null;
   }

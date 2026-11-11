@@ -38,6 +38,8 @@ export function createEmptyTicket(sourceType: Ticket["sourceType"] = "manual"): 
     segments: [createEmptyTicketSegment()],
     fareConditions: null,
     notes: null,
+    infoText: brand.ticketNotes,
+    infoTextDari: brand.ticketNotesDari,
     reviewFlags: [],
     createdAt: now,
     updatedAt: now,

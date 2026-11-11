@@ -16,7 +16,7 @@ const extraction = (passengers: TicketExtraction["passengers"]): TicketExtractio
     {
       airlineName: null, airlineCode: "RQ", flightNumber: "9919", originCode: "KBL", originName: "Kabul", destinationCode: "SAW",
       destinationName: "Istanbul", departureDate: "2026-10-27", departureTime: "22:20", arrivalDate: "2026-10-28", arrivalTime: "02:30",
-      duration: null, stops: null, cabin: null, baggage: "30 kg", departureTerminal: null, arrivalTerminal: null, bookingClass: "K", bookingStatus: "OK",
+      duration: null, stops: null, cabin: null, handCarry: null, checkIn: "30 kg", departureTerminal: null, arrivalTerminal: null, bookingClass: "K", bookingStatus: "OK",
     },
   ],
   fareConditions: null,
@@ -63,7 +63,7 @@ describe("reviewTicket", () => {
 describe("buildCustomerTicket", () => {
   it("prints the carrier code with a bare flight number and the class on one line", () => {
     const view = buildCustomerTicket(ticketFromExtraction(extraction(NOORI_FAMILY), { fileNames: [], demo: false }));
-    expect(view.segments[0]).toMatchObject({ flightNumber: "RQ 9919", airlineCode: "RQ", details: ["Class: K", "Baggage: 30 kg", "Status: OK"] });
+    expect(view.segments[0]).toMatchObject({ flightNumber: "RQ 9919", airlineCode: "RQ", details: ["Class: K", "Status: OK"], baggage: { handCarry: null, checkIn: "30 kg" } });
     expect(view.passengers.map((p) => p.type)).toEqual(["Adult", "Child", "Infant", "Adult"]);
     expect(view.routeSummary).toBe("KBL – SAW");
   });

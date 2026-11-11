@@ -10,7 +10,7 @@ const extraction = (segment: Partial<Extraction["segments"][number]>): Extractio
     {
       airlineName: null, airlineCode: "QR", flightNumber: "QR 611", originCode: "LHE", originName: null,
       destinationCode: "DOH", destinationName: null, departureDate: "2027-01-12", departureTime: "03:35",
-      arrivalDate: "2027-01-12", arrivalTime: "05:45", duration: null, stops: 0, cabin: "Y", baggage: "30 KG",
+      arrivalDate: "2027-01-12", arrivalTime: "05:45", duration: null, stops: 0, cabin: "Y", handCarry: null, checkIn: "30 KG",
       ...segment,
     },
   ],
@@ -27,8 +27,8 @@ describe("groundInSourceText", () => {
   });
 
   it("keeps printed values despite spacing/punctuation differences", () => {
-    const out = groundInSourceText(extraction({ flightNumber: "QR611", baggage: "30 KG", cabin: "Y" }), SOURCE);
-    expect(out.segments[0]).toMatchObject({ flightNumber: "QR611", baggage: "30 KG", cabin: "Y" });
+    const out = groundInSourceText(extraction({ flightNumber: "QR611", checkIn: "30 KG", cabin: "Y" }), SOURCE);
+    expect(out.segments[0]).toMatchObject({ flightNumber: "QR611", checkIn: "30 KG", cabin: "Y" });
     expect(out.sourceReference).toBe("SKW-88412");
   });
 });

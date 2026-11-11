@@ -37,7 +37,8 @@ export const SEGMENT_FIELD_LABELS: Record<keyof Omit<FlightSegment, "id">, strin
   duration: "Duration",
   stops: "Stops",
   cabin: "Cabin class",
-  baggage: "Baggage",
+  handCarry: "Hand carry",
+  checkIn: "Check in",
 };
 
 export const segmentField = (index: number, key: keyof FlightSegment) => `segments.${index}.${key}`;

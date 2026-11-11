@@ -1,6 +1,6 @@
 import { brand } from "@/config/brand";
 import type { Extraction, ExtractedSegment } from "@/features/extraction/schema";
-import { baggageLabel, conditionsLabel, flightNumberLabel, formatDuration, splitLocal } from "@/features/flights/format";
+import { checkInLabel, conditionsLabel, handCarryLabel, flightNumberLabel, formatDuration, splitLocal } from "@/features/flights/format";
 import type { FlightOffer, OfferSegment } from "@/features/flights/schema";
 import {
   AIRLINE_CODE,
@@ -43,7 +43,8 @@ export function createEmptySegment(): FlightSegment {
     duration: null,
     stops: null,
     cabin: null,
-    baggage: null,
+    handCarry: null,
+    checkIn: null,
   };
 }
 
@@ -69,6 +70,7 @@ export function createEmptyQuotation(sourceType: SourceType = "manual"): Quotati
     fareConditions: null,
     notes: null,
     termsText: brand.defaultTerms,
+    termsTextDari: brand.defaultTermsDari,
     reviewFlags: [],
     createdAt: now,
     updatedAt: now,
@@ -120,7 +122,8 @@ export function segmentFromExtraction(s: ExtractedSegment, index: number, flags:
     duration: clean(s.duration),
     stops: toCount(s.stops),
     cabin: clean(s.cabin),
-    baggage: clean(s.baggage),
+    handCarry: clean(s.handCarry),
+    checkIn: clean(s.checkIn),
   };
 }
 
@@ -183,7 +186,8 @@ function segmentFromOffer(seg: OfferSegment): FlightSegment {
     duration: formatDuration(seg.durationMinutes),
     stops: seg.technicalStops,
     cabin: seg.cabin,
-    baggage: baggageLabel(seg.baggage),
+    handCarry: handCarryLabel(seg.baggage),
+    checkIn: checkInLabel(seg.baggage),
   };
 }
 

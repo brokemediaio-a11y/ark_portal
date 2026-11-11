@@ -94,7 +94,11 @@ export function SegmentCard<S extends FlightSegment>({ segment, index, total, on
             placeholder="0 = non-stop"
           />
           {text("duration", { placeholder: "e.g. 3h 15m" })}
-          {text("baggage", { placeholder: "e.g. 30 kg", hint: "Only if the supplier states it." })}
+        </FieldGroup>
+
+        <FieldGroup title="Baggage">
+          {text("handCarry", { placeholder: "e.g. 7 kg", hint: "Only if the supplier states it." })}
+          {text("checkIn", { placeholder: "e.g. 30 kg", hint: "Only if the supplier states it." })}
         </FieldGroup>
         {extra}
       </div>

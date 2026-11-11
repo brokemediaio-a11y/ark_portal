@@ -116,7 +116,7 @@ describe("extractDocuments (quotations)", () => {
   it("removes values neither reading supports", async () => {
     const provider = fakeProvider(DEMO_EXTRACTION, ["unrelated text", "unrelated text"]);
     const { data } = await extractDocuments([file("shot.png", PNG)], provider, quotationTask);
-    expect(data.segments[0]).toMatchObject({ flightNumber: null, departureTime: null, baggage: null });
+    expect(data.segments[0]).toMatchObject({ flightNumber: null, departureTime: null, checkIn: null });
     expect(data.totalAmount).toBeNull();
     expect(data.uncertainFields.map((f) => f.field)).toContain("segments.0.flightNumber");
   });
@@ -186,7 +186,7 @@ const tahiriAnswer = (over: Partial<TicketExtraction> = {}): TicketExtraction =>
     {
       airlineName: null, airlineCode: null, flightNumber: "B9-9735", originCode: "MHD", originName: "Mashhad", destinationCode: "IST",
       destinationName: "Istanbul", departureDate: "2026-10-18", departureTime: "08:00", arrivalDate: "2026-10-18", arrivalTime: "11:30",
-      duration: null, stops: null, cabin: "Y", baggage: "30 kg", departureTerminal: null, arrivalTerminal: null, bookingClass: "Y", bookingStatus: null,
+      duration: null, stops: null, cabin: "Y", handCarry: null, checkIn: "30 kg", departureTerminal: null, arrivalTerminal: null, bookingClass: "Y", bookingStatus: null,
     },
   ],
   fareConditions: null,

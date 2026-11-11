@@ -1,5 +1,4 @@
-import { brand } from "@/config/brand";
-import { formatIsoDate, routeSummaryOf, toCustomerSegment, type CustomerSegment } from "@/features/quotation/customer-view";
+import { formatIsoDate, noteLines, routeSummaryOf, toCustomerSegment, type CustomerSegment } from "@/features/quotation/customer-view";
 import type { PassengerType, Ticket } from "./schema";
 
 /**
@@ -19,12 +18,13 @@ export interface CustomerTicket {
   segments: CustomerSegment[];
   fareConditions: string | null;
   notes: string | null;
+  /** Important information in Dari, printed beside the English. */
+  termsDari: string[];
   terms: string[];
 }
 
 export const PASSENGER_TYPE_LABELS: Record<NonNullable<PassengerType>, string> = { adult: "Adult", child: "Child", infant: "Infant" };
 
-const lines = (text: string | null) => (text ?? "").split("\n").map((t) => t.trim()).filter(Boolean);
 
 export function buildCustomerTicket(t: Ticket): CustomerTicket {
   return {
@@ -45,13 +45,14 @@ export function buildCustomerTicket(t: Ticket): CustomerTicket {
         ...segment,
         from: { ...segment.from, terminal: s.departureTerminal },
         to: { ...segment.to, terminal: s.arrivalTerminal },
-        details: [travelClass && `Class: ${travelClass}`, s.baggage && `Baggage: ${s.baggage}`, s.bookingStatus && `Status: ${s.bookingStatus}`].filter(
+        details: [travelClass && `Class: ${travelClass}`, s.bookingStatus && `Status: ${s.bookingStatus}`].filter(
           (v): v is string => Boolean(v),
         ),
       };
     }),
     fareConditions: t.fareConditions,
     notes: t.notes,
-    terms: lines(brand.ticketNotes),
+    terms: noteLines(t.infoText),
+    termsDari: noteLines(t.infoTextDari),
   };
 }

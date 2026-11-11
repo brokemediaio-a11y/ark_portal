@@ -4,6 +4,7 @@ import { createElement, useEffect, useRef, useState, type ReactElement } from "r
 import { brand } from "@/config/brand";
 import type { CustomerQuote } from "@/features/quotation/customer-view";
 import type { CustomerTicket } from "@/features/ticket/ticket-view";
+import type { PdfLayout } from "./layout";
 
 /** Logos already loaded, so the preview doesn't refetch them on every edit. */
 const airlineLogoCache = new Map<string, string>();
@@ -45,21 +46,21 @@ async function preparePdf(airlineCodes: (string | null)[]) {
 }
 
 /** Renders the customer view of a quotation to a PDF Blob. The PDF library is loaded on demand. */
-export async function renderQuotationPdf(quote: CustomerQuote): Promise<Blob> {
+export async function renderQuotationPdf(quote: CustomerQuote, layout: PdfLayout = "desktop"): Promise<Blob> {
   const [{ QuotationDocument }, { airlineLogos, logoSrc, toBlob }] = await Promise.all([
     import("./quotation-document"),
     preparePdf(quote.segments.map((s) => s.airlineCode)),
   ]);
-  return toBlob(createElement(QuotationDocument, { quote, logoSrc, airlineLogos }));
+  return toBlob(createElement(QuotationDocument, { quote, logoSrc, airlineLogos, layout }));
 }
 
 /** Renders an Ark e-ticket to a PDF Blob. */
-export async function renderTicketPdf(ticket: CustomerTicket): Promise<Blob> {
+export async function renderTicketPdf(ticket: CustomerTicket, layout: PdfLayout = "desktop"): Promise<Blob> {
   const [{ TicketDocument }, { airlineLogos, logoSrc, toBlob }] = await Promise.all([
     import("./ticket-document"),
     preparePdf(ticket.segments.map((s) => s.airlineCode)),
   ]);
-  return toBlob(createElement(TicketDocument, { ticket, logoSrc, airlineLogos }));
+  return toBlob(createElement(TicketDocument, { ticket, logoSrc, airlineLogos, layout }));
 }
 
 export interface PdfState {
@@ -110,4 +111,13 @@ export function usePdfPreview<T>(data: T | null, render: (data: T) => Promise<Bl
   return state;
 }
 
-export const useQuotationPdf = (quote: CustomerQuote | null) => usePdfPreview(quote, renderQuotationPdf);
+const renderQuotationLayout = ({ data, layout }: { data: CustomerQuote; layout: PdfLayout }) => renderQuotationPdf(data, layout);
+const renderTicketLayout = ({ data, layout }: { data: CustomerTicket; layout: PdfLayout }) => renderTicketPdf(data, layout);
+
+/** Live preview of a quotation in the chosen layout: what is shown is exactly what gets downloaded. */
+export const useQuotationPdf = (quote: CustomerQuote | null, layout: PdfLayout = "desktop") =>
+  usePdfPreview(quote ? { data: quote, layout } : null, renderQuotationLayout);
+
+/** Live preview of an e-ticket in the chosen layout. */
+export const useTicketPdf = (ticket: CustomerTicket | null, layout: PdfLayout = "desktop") =>
+  usePdfPreview(ticket ? { data: ticket, layout } : null, renderTicketLayout);

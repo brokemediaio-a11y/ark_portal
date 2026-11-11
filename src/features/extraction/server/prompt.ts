@@ -46,7 +46,8 @@ Flight fields:
 - duration: as printed for that flight (e.g. "3h 25min"). A layover is not a duration.
 - stops: only when stated for that specific flight ("Non-stop"/"Direct" = 0). Otherwise null; do not assume 0.
 - cabin: as printed (e.g. "Economy", or a booking-class letter like "Y").
-- baggage: only an allowance printed in the document, as printed. Otherwise null.
+- handCarry: the hand carry / cabin / carry-on allowance, only if printed, as printed (e.g. "7 kg", "1 piece"). Otherwise null.
+- checkIn: the checked / hold baggage allowance, only if printed, as printed (e.g. "30 kg", "10K", "1PC"). A single allowance printed without saying which kind (e.g. "Baggage: 30 kg", "BAG 30 kg") is the check-in allowance. Otherwise null.
 - One segment per individual flight leg, in travel order (outbound then return). A connection = two segments.
 
 uncertainFields: list ONLY values you filled in but that are ambiguous, partly illegible (for example containing [?]) or interpreted (e.g. an assumed year). Include the source snippet as evidence. Do NOT list fields that are simply absent from the document — leave those null without a flag.`;

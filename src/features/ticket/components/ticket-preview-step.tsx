@@ -4,25 +4,28 @@ import { CheckCheck, Download, Mail } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button, buttonClasses } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
+import { SelectField } from "@/components/ui/form-field";
 import { brand } from "@/config/brand";
 import { downloadBlob, PdfPreviewCard } from "@/features/pdf/pdf-preview-card";
-import { renderTicketPdf, usePdfPreview } from "@/features/pdf/use-quotation-pdf";
+import { layoutFileSuffix, PDF_LAYOUTS, type PdfLayout } from "@/features/pdf/layout";
+import { useTicketPdf } from "@/features/pdf/use-quotation-pdf";
 import { buildCustomerTicket } from "../ticket-view";
 import type { TicketEditor } from "../use-ticket-editor";
 
-const pdfFileName = (name: string) => `${brand.name.replace(/\s+/g, "-")}-E-ticket-${name.replace(/[^\w-]+/g, "")}.pdf`;
+const pdfFileName = (name: string, layout: PdfLayout) => `${brand.name.replace(/\s+/g, "-")}-E-ticket-${name.replace(/[^\w-]+/g, "")}${layoutFileSuffix(layout)}.pdf`;
 
 export function TicketPreviewStep({ editor }: { editor: TicketEditor }) {
   const { ticket: t, update } = editor;
   const view = useMemo(() => buildCustomerTicket(t), [t]);
-  const pdf = usePdfPreview(view, renderTicketPdf);
-  const [downloaded, setDownloaded] = useState(false);
-  const fileName = pdfFileName(t.bookingReference ?? t.ticketRef);
+  const [layout, setLayout] = useState<PdfLayout>("desktop");
+  const pdf = useTicketPdf(view, layout);
+  const [downloaded, setDownloaded] = useState<PdfLayout | null>(null);
+  const fileName = pdfFileName(t.bookingReference ?? t.ticketRef, layout);
 
   const download = () => {
     if (!pdf.blob) return;
     downloadBlob(pdf.blob, fileName);
-    setDownloaded(true);
+    setDownloaded(layout);
     if (t.status === "draft") update("status", "ready");
   };
 
@@ -39,8 +42,16 @@ export function TicketPreviewStep({ editor }: { editor: TicketEditor }) {
         <Card>
           <CardHeader icon={Download} title="1. Download the e-ticket" />
           <CardBody className="space-y-3">
-            <Button size="lg" variant="accent" icon={downloaded ? CheckCheck : Download} className="w-full" onClick={download} disabled={!pdf.blob}>
-              {downloaded ? "Downloaded — download again" : "Download PDF"}
+            <SelectField
+              label="PDF format"
+              hint="Mobile PDFs use phone-sized pages, so every flight card is readable without zooming."
+              value={layout}
+              onChange={(value) => value && setLayout(value)}
+              options={PDF_LAYOUTS}
+              placeholder={null}
+            />
+            <Button size="lg" variant="accent" icon={downloaded === layout ? CheckCheck : Download} className="w-full" onClick={download} disabled={!pdf.blob || pdf.loading}>
+              {downloaded === layout ? "Downloaded — download again" : layout === "mobile" ? "Download mobile PDF" : "Download desktop PDF"}
             </Button>
             <p className="text-xs text-ink-muted">Saved as {fileName}</p>
           </CardBody>

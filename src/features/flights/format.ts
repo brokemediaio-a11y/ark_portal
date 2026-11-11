@@ -47,6 +47,12 @@ export function baggageLabel(b: Baggage | null): string | null {
   return parts.join(", ");
 }
 
+const bags = (n: number) => `${n} bag${n > 1 ? "s" : ""}`;
+
+/** Allowances for a quotation's baggage fields; null when the airline didn't say, "None" when it said zero. */
+export const handCarryLabel = (b: Baggage | null) => (b?.carryOn == null ? null : b.carryOn === 0 ? "None" : bags(b.carryOn));
+export const checkInLabel = (b: Baggage | null) => (b?.checked == null ? null : b.checked === 0 ? "None" : bags(b.checked));
+
 function conditionLabel(name: string, c: FareCondition | null): string | null {
   if (!c) return null;
   if (!c.allowed) return `${name}: not allowed`;

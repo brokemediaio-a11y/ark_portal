@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { brand } from "@/config/brand";
 
 /** Optional text: empty strings are stored as null so "missing" has one meaning. */
 const optionalText = z
@@ -13,7 +14,8 @@ export const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 export const TIME_24H = /^([01]\d|2[0-3]):[0-5]\d$/;
 export const CURRENCY_CODE = /^[A-Z]{3}$/;
 
-export const flightSegmentSchema = z.object({
+/** One flight's fields. Extended by e-tickets; see flightSegmentSchema for the stored form. */
+export const flightSegmentShape = z.object({
   id: z.string(),
   airlineName: optionalText,
   airlineCode: optionalText,
@@ -31,8 +33,25 @@ export const flightSegmentSchema = z.object({
   duration: optionalText,
   stops: z.number().int().min(0).nullable(),
   cabin: optionalText,
-  baggage: optionalText,
+  /** Hand carry (cabin) allowance, e.g. "7 kg". */
+  handCarry: optionalText.default(null),
+  /** Check-in (hold) allowance, e.g. "30 kg". */
+  checkIn: optionalText.default(null),
 });
+
+/**
+ * Documents saved before baggage was split had one "baggage" value, which on supplier
+ * documents is almost always the checked allowance: it becomes "check in".
+ */
+export function withLegacyBaggage<T extends z.ZodType>(schema: T) {
+  return z.preprocess((value) => {
+    if (!value || typeof value !== "object" || !("baggage" in value)) return value;
+    const { baggage, ...segment } = value as Record<string, unknown>;
+    return segment.checkIn != null ? segment : { ...segment, checkIn: baggage ?? null };
+  }, schema);
+}
+
+export const flightSegmentSchema = withLegacyBaggage(flightSegmentShape);
 
 export const markupSchema = z.object({
   type: z.enum(["fixed", "percentage"]),
@@ -103,6 +122,8 @@ export const quotationSchema = z.object({
   fareConditions: optionalText,
   notes: optionalText,
   termsText: optionalText,
+  /** Dari terms printed beside the English ones. Older quotations get the default. */
+  termsTextDari: optionalText.default(brand.defaultTermsDari),
   /** Flags raised at extraction time; staff dismiss them as they review. */
   reviewFlags: z.array(reviewFlagSchema),
   createdAt: z.string(),

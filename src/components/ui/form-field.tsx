@@ -203,7 +203,8 @@ interface SelectFieldProps<T extends string> extends BaseFieldProps {
   value: T | null;
   onChange: (value: T | null) => void;
   options: readonly { value: T; label: string }[];
-  placeholder?: string;
+  /** null: no empty choice, for selects that always have a value. */
+  placeholder?: string | null;
 }
 
 export function SelectField<T extends string>({ value, onChange, options, placeholder = "Select…", ...shell }: SelectFieldProps<T>) {
@@ -217,7 +218,7 @@ export function SelectField<T extends string>({ value, onChange, options, placeh
           onChange={(e) => onChange(e.target.value === "" ? null : (e.target.value as T))}
           className={controlClasses(tone, "h-11 pr-8")}
         >
-          <option value="">{placeholder}</option>
+          {placeholder !== null && <option value="">{placeholder}</option>}
           {options.map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}
@@ -234,15 +235,18 @@ interface TextAreaFieldProps extends BaseFieldProps {
   onChange: (value: string | null) => void;
   placeholder?: string;
   rows?: number;
+  /** "rtl" for Dari/Persian text. */
+  dir?: "ltr" | "rtl";
 }
 
-export function TextAreaField({ value, onChange, placeholder, rows = 3, ...shell }: TextAreaFieldProps) {
+export function TextAreaField({ value, onChange, placeholder, rows = 3, dir, ...shell }: TextAreaFieldProps) {
   return (
     <FieldShell {...shell}>
       {({ id, describedBy, tone }) => (
         <textarea
           id={id}
           rows={rows}
+          dir={dir}
           value={value ?? ""}
           placeholder={placeholder}
           aria-describedby={describedBy}

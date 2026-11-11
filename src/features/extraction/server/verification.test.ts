@@ -28,7 +28,7 @@ Cabin: Economy | Time: 3h 40min`;
 const segment = (over: Partial<ExtractedSegment>): ExtractedSegment => ({
   airlineName: "TURKISH AIRLINES", airlineCode: "TK", flightNumber: "TK 1954", originCode: "AMS", originName: "AMSTERDAM",
   destinationCode: "IST", destinationName: "ISTANBUL AIRPORT", departureDate: "2026-12-10", departureTime: "18:30",
-  arrivalDate: "2026-12-10", arrivalTime: "23:55", duration: "3h 25min", stops: null, cabin: "Economy", baggage: null,
+  arrivalDate: "2026-12-10", arrivalTime: "23:55", duration: "3h 25min", stops: null, cabin: "Economy", handCarry: null, checkIn: null,
   ...over,
 });
 
@@ -48,9 +48,9 @@ describe("groundInSourceText on the Sabre itinerary", () => {
   });
 
   it("removes and flags the invented values from the original bug", () => {
-    const invented = segment({ flightNumber: "TK 1951", departureTime: "20:50", duration: "3h 5m", stops: 0, baggage: "1 piece" });
+    const invented = segment({ flightNumber: "TK 1951", departureTime: "20:50", duration: "3h 5m", stops: 0, checkIn: "1 piece" });
     const out = groundInSourceText(extraction([invented], { currency: "EUR", totalAmount: 2400, passengers: { adults: 1, children: 0, infants: 0 } }), SABRE);
-    expect(out.segments[0]).toMatchObject({ flightNumber: null, departureTime: null, duration: null, stops: null, baggage: null });
+    expect(out.segments[0]).toMatchObject({ flightNumber: null, departureTime: null, duration: null, stops: null, checkIn: null });
     expect(out).toMatchObject({ currency: null, totalAmount: null, passengers: { adults: null, children: null, infants: null } });
     expect(flagged(out)).toEqual(["segments.0.flightNumber", "segments.0.departureTime", "sourceTotal"]);
   });

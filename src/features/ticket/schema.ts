@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { flightSegmentSchema, reviewFlagSchema } from "@/features/quotation/schema";
+import { brand } from "@/config/brand";
+import { flightSegmentShape, reviewFlagSchema, withLegacyBaggage } from "@/features/quotation/schema";
 
 /** An Ark e-ticket, converted from a supplier's ticket. Stored like a quotation. */
 
@@ -13,12 +14,12 @@ export const PASSENGER_TYPES = ["adult", "child", "infant"] as const;
 export const TICKET_STATUSES = ["draft", "ready", "sent"] as const;
 export const TICKET_SOURCE_TYPES = ["upload", "manual", "demo"] as const;
 
-export const ticketSegmentSchema = flightSegmentSchema.extend({
+export const ticketSegmentSchema = withLegacyBaggage(flightSegmentShape.extend({
   departureTerminal: optionalText,
   arrivalTerminal: optionalText,
   bookingClass: optionalText,
   bookingStatus: optionalText,
-});
+}));
 
 export const ticketPassengerSchema = z.object({
   id: z.string(),
@@ -44,6 +45,9 @@ export const ticketSchema = z.object({
   segments: z.array(ticketSegmentSchema),
   fareConditions: optionalText,
   notes: optionalText,
+  /** "Important information" in English and Dari. Older tickets get the defaults. */
+  infoText: optionalText.default(brand.ticketNotes),
+  infoTextDari: optionalText.default(brand.ticketNotesDari),
   reviewFlags: z.array(reviewFlagSchema),
   createdAt: z.string(),
   updatedAt: z.string(),
