@@ -1,0 +1,5 @@
+# Replace the hostname with your real portal domain. Caddy gets and renews the HTTPS certificate itself.
+portal.example.com {
+	encode gzip
+	reverse_proxy 127.0.0.1:3000
+}

@@ -1,0 +1,2 @@
+# Install as /etc/sudoers.d/ark-portal (chmod 440). Lets the deploy user restart only this service.
+deploy ALL=(root) NOPASSWD: /usr/bin/systemctl restart ark-portal, /usr/bin/journalctl -u ark-portal -n 40 --no-pager
