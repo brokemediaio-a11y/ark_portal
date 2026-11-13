@@ -1,0 +1,72 @@
+name: CI/CD
+
+# Every push to main is checked, then deployed to the VPS.
+# Pull requests are checked only; they never deploy.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deploy at a time. A running deploy is never cancelled halfway.
+concurrency:
+  group: ci-cd-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Lint, typecheck, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  deploy:
+    name: Deploy to VPS
+    needs: check
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: ark-portal
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Upload this commit and deploy it
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+        run: |
+          SSH="ssh -i $HOME/.ssh/deploy_key -o StrictHostKeyChecking=yes -o BatchMode=yes -p ${DEPLOY_PORT:-22} $DEPLOY_USER@$DEPLOY_HOST"
+          # Ship exactly the commit that passed the checks; the server never needs GitHub access.
+          git archive --format=tar.gz "$GITHUB_SHA" | $SSH "mkdir -p /opt/ark_portal/incoming && cat > /opt/ark_portal/incoming/$GITHUB_SHA.tgz"
+          # Run the deploy script from this same commit, so it is always in sync with the code.
+          # It is saved as a file first: npm would swallow the rest of a script piped into bash.
+          $SSH "cat > /opt/ark_portal/incoming/deploy-$GITHUB_SHA.sh" < deploy/deploy.sh
+          $SSH "bash /opt/ark_portal/incoming/deploy-$GITHUB_SHA.sh $GITHUB_SHA; rc=\$?; rm -f /opt/ark_portal/incoming/deploy-$GITHUB_SHA.sh; exit \$rc" < /dev/null
