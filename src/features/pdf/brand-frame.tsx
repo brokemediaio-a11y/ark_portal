@@ -64,8 +64,13 @@ export const PAGE_PADDING_X = 40;
 
 export type IconName = "phone" | "mail" | "globe" | "pin" | "facebook" | "instagram" | "tiktok" | "whatsapp" | "luggage";
 
-/** WhatsApp's own green, used for its icon in the footer. */
+/** WhatsApp's own green, used for its icon in the header. */
 const WHATSAPP_GREEN = "#25D366";
+
+/** "+46 700 101 401" → a WhatsApp chat with that number (wa.me takes the digits only). */
+export const whatsAppLink = (phone: string) => `https://wa.me/${phone.replace(/\D/g, "")}`;
+/** "+46 700 101 401" → a call from the phone app. */
+export const phoneLink = (phone: string) => `tel:${phone.replace(/[^\d+]/g, "")}`;
 
 /** Brand marks from Simple Icons (CC0), drawn filled rather than outlined. */
 const FILLED_ICONS: Partial<Record<IconName, string>> = {
@@ -168,7 +173,7 @@ function HeaderContact({ icon, children, href }: { icon: IconName; children: str
   const { mobile, st } = useHeaderStyle();
   return (
     <View style={st("contactRow")}>
-      <Icon name={icon} size={mobile ? 6 : 7.5} color={BAND.text} />
+      <Icon name={icon} size={mobile ? 6 : 7.5} color={icon === "whatsapp" ? WHATSAPP_GREEN : BAND.text} />
       {href ? <Link src={href} style={st("contactText")}>{children}</Link> : <Text style={st("contactText")}>{children}</Text>}
     </View>
   );
@@ -190,7 +195,8 @@ export function BrandHeader({ logoSrc }: { logoSrc: string | null }) {
         </View>
         <View style={st("contacts")}>
           {brand.contact.phones.map((phone) => (
-            <HeaderContact key={phone} icon="phone" href={`tel:${phone.replace(/\s+/g, "")}`}>{phone}</HeaderContact>
+            // The header opens a WhatsApp chat; the footer offers a phone call.
+            <HeaderContact key={phone} icon="whatsapp" href={whatsAppLink(phone)}>{phone}</HeaderContact>
           ))}
           <HeaderContact icon="mail" href={`mailto:${brand.contact.email}`}>{brand.contact.email}</HeaderContact>
           <HeaderContact icon="globe" href={brand.contact.websiteUrl}>{brand.contact.website}</HeaderContact>
@@ -325,8 +331,8 @@ export function BrandClosing({ reference }: { reference: string }) {
         <View style={st("right")}>
           <Text style={st("label")}>Contact us</Text>
           {brand.contact.phones.map((phone) => (
-            // The footer offers WhatsApp chats; the header keeps phone calls.
-            <ClosingContact key={phone} icon="whatsapp" href={`https://wa.me/${phone.replace(/\D/g, "")}`}>{phone}</ClosingContact>
+            // The footer offers a phone call; the header opens a WhatsApp chat.
+            <ClosingContact key={phone} icon="phone" href={phoneLink(phone)}>{phone}</ClosingContact>
           ))}
           <ClosingContact icon="mail" href={`mailto:${brand.contact.email}`}>{brand.contact.email}</ClosingContact>
           <ClosingContact icon="globe" href={brand.contact.websiteUrl}>{brand.contact.website}</ClosingContact>

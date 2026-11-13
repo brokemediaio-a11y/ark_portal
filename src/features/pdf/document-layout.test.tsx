@@ -31,7 +31,7 @@ describe("content-sized PDFs", () => {
         }));
         document.notes = long ? `${"Review all travel documents before departure. ".repeat(120)}Final itinerary note.` : "Final itinerary note.";
         ticket.passengers = Array.from({ length: long ? 30 : 1 }, (_, index) => ({
-          id: `passenger-${index}`, name: `Passenger ${index + 1}`, type: "adult", dateOfBirth: "1990-01-01", ticketNumber: `123456789${index}`,
+          id: `passenger-${index}`, name: `Passenger ${index + 1}`, type: "adult", dateOfBirth: "1990-01-01", ticketNumber: `123456789${index}`, flightTicketNumbers: {},
         }));
         const element = kind === "quotation"
           ? <QuotationDocument quote={buildCustomerQuote(quotation)} logoSrc={logoSrc} />
@@ -138,7 +138,7 @@ describe("mobile PDFs", () => {
       const ticket = createEmptyTicket();
       ticket.segments = segments.map((segment) => ({ ...ticket.segments[0], ...segment }));
       ticket.passengers = Array.from({ length: 12 }, (_, index) => ({
-        id: `passenger-${index}`, name: `Passenger ${index + 1}`, type: "adult", dateOfBirth: "1990-01-01", ticketNumber: `123456789${index}`,
+        id: `passenger-${index}`, name: `Passenger ${index + 1}`, type: "adult", dateOfBirth: "1990-01-01", ticketNumber: `123456789${index}`, flightTicketNumbers: {},
       }));
       const element = kind === "quotation"
         ? <QuotationDocument quote={buildCustomerQuote(quotation)} logoSrc={logoSrc} layout="mobile" />
@@ -221,4 +221,35 @@ describe("mobile PDFs", () => {
     expect(pageCounts.size).toBeGreaterThan(1);
     expect(sharedPage).toBe(true);
   }, 120_000);
+});
+
+describe("contact links", () => {
+  it("opens WhatsApp from the header numbers and the phone app from the footer numbers", async () => {
+    const buffer = await renderToBuffer(<TicketDocument ticket={buildCustomerTicket(createEmptyTicket())} logoSrc={logoSrc} />);
+    const page = await (await getDocumentProxy(new Uint8Array(buffer))).getPage(1);
+    const height = page.getViewport({ scale: 1 }).height;
+    const links = (await page.getAnnotations()).flatMap((a: { url?: string; rect: number[] }) => (a.url ? [{ url: a.url, top: height - a.rect[3] }] : []));
+    const whatsApp = links.filter((l) => l.url.startsWith("https://wa.me/"));
+    const calls = links.filter((l) => l.url.startsWith("tel:"));
+    expect(whatsApp.map((l) => l.url)).toEqual(["https://wa.me/46700101401", "https://wa.me/4915257111901"]);
+    expect(calls.map((l) => l.url)).toEqual(["tel:+46700101401", "tel:+4915257111901"]);
+    // WhatsApp in the header at the top, calls in the footer at the bottom.
+    expect(Math.max(...whatsApp.map((l) => l.top))).toBeLessThan(Math.min(...calls.map((l) => l.top)));
+  });
+});
+
+describe("mobile e-ticket with several bookings", () => {
+  it("fits the booking references and the passenger's tickets on the first page", async () => {
+    const ticket = createEmptyTicket();
+    ticket.segments = ["TIKVND", "PTX09", "PTX0C", "TIKVND"].map((bookingReference, i) => ({
+      ...ticket.segments[0], id: `s${i}`, flightNumber: `TK ${1800 + i}`, airlineName: i % 3 ? null : "Turkish Airlines",
+      originCode: "IST", destinationCode: "IFN", departureDate: "2026-11-17", departureTime: "18:15", arrivalDate: "2026-11-17", arrivalTime: "23:45", bookingReference,
+    }));
+    ticket.bookingReference = "TIKVND";
+    ticket.passengers = [{ id: "p", name: "SAMADI/KAZEM", type: null, dateOfBirth: null, ticketNumber: "235-2531625879", flightTicketNumbers: { s1: "6482404179838", s2: "6482404179839" } }];
+    const buffer = await renderToBuffer(<TicketDocument ticket={buildCustomerTicket(ticket)} logoSrc={logoSrc} layout="mobile" />);
+    const first = await (await getDocumentProxy(new Uint8Array(buffer))).getPage(1);
+    const text = (await first.getTextContent()).items.map((item) => ("str" in item ? item.str : "")).join(" ").replace(/\s/g, "");
+    for (const value of ["PTX09", "PTX0C", "TIKVND", "SAMADI/KAZEM", "235-2531625879", "6482404179838", "6482404179839"]) expect(text, value).toContain(value);
+  }, 30_000);
 });

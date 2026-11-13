@@ -2,7 +2,7 @@ import "server-only";
 import { apiAccess } from "@/features/auth/server";
 import { createRateLimiter } from "@/lib/rate-limit";
 import { UPLOAD_MAX_FILES, UPLOAD_MAX_TOTAL_BYTES } from "@/config/upload";
-import type { ExtractResponse } from "../schema";
+import type { ExtractResponse, ItineraryExtraction } from "../schema";
 import { extractDocuments, type ExtractionTask } from "./extract-service";
 import { ExtractionError, getExtractionProvider } from "./providers";
 import type { UploadedFile } from "./read-documents";
@@ -13,7 +13,7 @@ const fail = (error: ExtractionError) =>
   Response.json({ ok: false, error: error.message, code: error.code } satisfies ExtractResponse, { status: error.status });
 
 /** Shared handler for the extraction endpoints: one or more files in the "file" field of a form. */
-export async function handleExtractRequest<T>(request: Request, task: ExtractionTask<T>): Promise<Response> {
+export async function handleExtractRequest<T extends ItineraryExtraction>(request: Request, task: ExtractionTask<T>): Promise<Response> {
   const access = await apiAccess(request, "documents"); if (access.response) return access.response;
   if (!extractLimit(access.user.id).ok) return Response.json({ ok: false, error: "Too many uploads. Wait a minute and try again.", code: "rate_limited" }, { status: 429 });
   try {

@@ -2,6 +2,7 @@
 
 import { Plane, Plus, ReceiptText, Trash2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { brand } from "@/config/brand";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { SelectField, TextAreaField, TextField } from "@/components/ui/form-field";
 import { FieldGroup, SegmentCard } from "@/features/quotation/components/segment-card";
@@ -10,6 +11,12 @@ import { PASSENGER_TYPE_LABELS } from "../ticket-view";
 import type { TicketEditor } from "../use-ticket-editor";
 
 const TYPE_OPTIONS = PASSENGER_TYPES.map((value) => ({ value, label: PASSENGER_TYPE_LABELS[value] }));
+
+/** Sets (or clears) one flight's own e-ticket number for a passenger. */
+function withFlightTicket(numbers: Record<string, string>, segmentId: string, value: string | null): Record<string, string> {
+  const rest = Object.fromEntries(Object.entries(numbers).filter(([id]) => id !== segmentId));
+  return value ? { ...rest, [segmentId]: value } : rest;
+}
 
 /** Everything printed on the e-ticket, grouped the way the PDF shows it. */
 export function TicketDetailsStep({ editor }: { editor: TicketEditor }) {
@@ -20,10 +27,13 @@ export function TicketDetailsStep({ editor }: { editor: TicketEditor }) {
       <Card>
         <CardHeader icon={ReceiptText} title="Booking" description="The references the traveller and the airline use for this trip." />
         <CardBody className="grid gap-4 sm:grid-cols-2">
-          <TextField label="Booking reference (PNR)" path="bookingReference" value={t.bookingReference} onChange={(v) => update("bookingReference", v)} uppercase placeholder="e.g. HUSWIQ" />
+          <TextField label="Booking reference (PNR)" path="bookingReference" value={t.bookingReference} onChange={(v) => update("bookingReference", v)} uppercase placeholder="e.g. HUSWIQ" hint="For every flight that has no reference of its own (see each flight)." />
           <TextField label="Airline reference" path="airlineReference" value={t.airlineReference} onChange={(v) => update("airlineReference", v)} uppercase hint="Only if the airline printed its own code." />
           <TextField label="Issue date" path="issueDate" type="date" value={t.issueDate} onChange={(v) => update("issueDate", v)} />
-          <TextField label="Issued by" path="issuedBy" value={t.issuedBy} onChange={(v) => update("issuedBy", v)} placeholder="e.g. Turkish Airlines" />
+          <div>
+            <p className="text-sm font-medium text-ink">Issued by</p>
+            <p className="mt-2 text-sm text-ink-muted">{brand.legalName}, on every e-ticket.</p>
+          </div>
         </CardBody>
       </Card>
 
@@ -42,7 +52,7 @@ export function TicketDetailsStep({ editor }: { editor: TicketEditor }) {
                 onChange={(v) => updateItem("passengers", i, { type: v ?? null })}
               />
               <TextField label="Date of birth" path={`passengers.${i}.dateOfBirth`} type="date" value={p.dateOfBirth} onChange={(v) => updateItem("passengers", i, { dateOfBirth: v })} />
-              <TextField label="E-ticket number" path={`passengers.${i}.ticketNumber`} value={p.ticketNumber} onChange={(v) => updateItem("passengers", i, { ticketNumber: v })} inputMode="numeric" />
+              <TextField label="E-ticket number" path={`passengers.${i}.ticketNumber`} value={p.ticketNumber} onChange={(v) => updateItem("passengers", i, { ticketNumber: v })} inputMode="numeric" hint={Object.keys(p.flightTicketNumbers).length ? "Some flights have their own number (see the flights)." : undefined} />
               <Button
                 variant="danger"
                 size="sm"
@@ -79,6 +89,26 @@ export function TicketDetailsStep({ editor }: { editor: TicketEditor }) {
                   <TextField label="Arrival terminal" path={`segments.${i}.arrivalTerminal`} value={segment.arrivalTerminal} onChange={(v) => updateSegment(i, { arrivalTerminal: v })} />
                   <TextField label="Booking class" path={`segments.${i}.bookingClass`} value={segment.bookingClass} onChange={(v) => updateSegment(i, { bookingClass: v })} uppercase maxLength={3} placeholder="e.g. K" />
                   <TextField label="Status" path={`segments.${i}.bookingStatus`} value={segment.bookingStatus} onChange={(v) => updateSegment(i, { bookingStatus: v })} uppercase placeholder="e.g. OK" />
+                  <TextField
+                    label="Booking reference"
+                    path={`segments.${i}.bookingReference`}
+                    value={segment.bookingReference}
+                    onChange={(v) => updateSegment(i, { bookingReference: v })}
+                    uppercase
+                    placeholder={t.bookingReference ?? "e.g. PTX09"}
+                    hint="Only if this flight was booked separately."
+                  />
+                  {t.passengers.map((p, j) => (
+                    <TextField
+                      key={p.id}
+                      label={`E-ticket: ${p.name ?? `Passenger ${j + 1}`}`}
+                      value={p.flightTicketNumbers[segment.id] ?? null}
+                      onChange={(v) => updateItem("passengers", j, { flightTicketNumbers: withFlightTicket(p.flightTicketNumbers, segment.id, v) })}
+                      inputMode="numeric"
+                      placeholder={p.ticketNumber ?? undefined}
+                      hint="Only if it differs from the passenger's number."
+                    />
+                  ))}
                 </FieldGroup>
               }
             />

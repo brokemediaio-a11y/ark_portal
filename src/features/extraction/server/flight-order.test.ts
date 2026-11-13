@@ -48,7 +48,7 @@ describe("orderFlightsBySource", () => {
   it("applies the correction through both quotation and ticket verification pipelines", () => {
     const input = data();
     const text = `${source}\nQR | 274 | 12/12/2026\nRQ | 978 | 13/12/2026\nRQ | 977 | 13/01/2027\nQR | 273 | 14/01/2027`;
-    const documents = { source: text, reads: null, scanned: false };
+    const documents = { source: text, documents: [text], reads: null, scanned: false };
     const ticket = { ...structuredClone(DEMO_TICKET), segments: input.segments.map(segment => ({ ...DEMO_TICKET.segments[0], ...segment })), uncertainFields: input.uncertainFields };
     const expected = ["QR 274", "RQ 978", "RQ 977", "QR 273"];
     expect(quotationTask.verify(input, documents, "2026-11-09").segments.map(segment => segment.flightNumber)).toEqual(expected);

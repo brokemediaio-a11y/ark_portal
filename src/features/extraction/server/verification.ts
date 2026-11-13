@@ -102,3 +102,23 @@ export function checkItinerary<T extends ItineraryExtraction>(data: T): T {
 
   return { ...data, uncertainFields: [...data.uncertainFields, ...flags] };
 }
+
+/** The value a flag path ("segments.0.originCode") points at, or undefined. */
+function valueAt(data: unknown, path: string): unknown {
+  return path.split(".").reduce<unknown>((at, key) => (at !== null && typeof at === "object" ? (at as Record<string, unknown>)[key] : undefined), data);
+}
+
+/**
+ * The AI is told to leave a value that isn't printed empty without flagging it, but sometimes flags it anyway ("The
+ * document does not state the IATA code"). There is nothing for staff to check, so such a flag is dropped. Run on the
+ * AI's own answer, before the checks add theirs.
+ */
+export function dropFlagsOnEmptyValues<T extends ItineraryExtraction>(data: T): T {
+  // Only a flight's own values: elsewhere an empty value can be the point of the flag (a total left for staff to enter).
+  const uncertainFields = data.uncertainFields.filter((f) => {
+    if (!/^segments\.\d+\.\w+$/.test(f.field)) return true;
+    const value = valueAt(data, f.field);
+    return value !== null && value !== "";
+  });
+  return uncertainFields.length === data.uncertainFields.length ? data : { ...data, uncertainFields };
+}

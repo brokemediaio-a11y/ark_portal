@@ -1,6 +1,7 @@
 import "server-only";
 import { validateUpload } from "../file-validation";
 import { MAX_PDF_PAGES, renderPdfPages, sliceForRead, TooManyPagesError } from "./page-images";
+import { normalizeDocumentText } from "./normalize-text";
 import { extractPdfText } from "./pdf-text";
 import { ExtractionError, type ExtractionProvider } from "./providers";
 
@@ -14,6 +15,8 @@ export interface DocumentsText {
   source: string;
   /** Two complete, independent readings of all documents, or null when every document had a text layer. */
   reads: [string, string] | null;
+  /** Each file's own text, labelled as in source; used to re-read a file whose flights the AI missed. */
+  documents: string[];
   /** True when at least one document was a scan, photo or screenshot. */
   scanned: boolean;
 }
@@ -59,7 +62,7 @@ async function readOne(file: UploadedFile, provider: ExtractionProvider, signal:
     const text = await extractPdfText(file.bytes).catch(() => {
       throw unreadable();
     });
-    if (text) return [text];
+    if (text) return [normalizeDocumentText(text)];
   }
   if (provider.isDemo) return [""];
 
@@ -74,7 +77,7 @@ async function readOne(file: UploadedFile, provider: ExtractionProvider, signal:
     throw unreadable();
   }
   const reads = await callProvider(provider, () => Promise.all(slices.map((images) => provider.transcribe(images, signal))));
-  return reads.map(stripCodeFence);
+  return reads.map((read) => normalizeDocumentText(stripCodeFence(read)));
 }
 
 /**
@@ -94,9 +97,10 @@ export async function readDocuments(files: UploadedFile[], provider: ExtractionP
 
   const many = files.length > 1;
   const wrap = (body: string, i: number) => (many ? `<document_${i + 1} name="${safeName(files[i].name)}">\n${body}\n</document_${i + 1}>` : body);
-  const source = texts.map((reads, i) => wrap(reads.length > 1 ? combineReads(reads) : reads[0], i)).join("\n\n");
+  const documents = texts.map((reads, i) => wrap(reads.length > 1 ? combineReads(reads) : reads[0], i));
+  const source = documents.join("\n\n");
   const scanned = texts.some((reads) => reads.length > 1);
   const reading = (n: 0 | 1) => texts.map((reads, i) => wrap(reads[Math.min(n, reads.length - 1)], i)).join("\n\n");
 
-  return { source, reads: scanned ? [reading(0), reading(1)] : null, scanned };
+  return { source, documents, reads: scanned ? [reading(0), reading(1)] : null, scanned };
 }

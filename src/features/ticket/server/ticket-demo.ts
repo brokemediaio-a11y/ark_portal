@@ -10,14 +10,14 @@ export const DEMO_TICKET: TicketExtraction = {
   issueDateAsPrinted: "01NOV26",
   issuedBy: "Demo Airways",
   passengers: [
-    { name: "DEMO/PASSENGER MR", type: "Adult", dateOfBirth: null, ticketNumber: "000 1234567890" },
+    { name: "DEMO/PASSENGER MR", type: "Adult", dateOfBirth: null, tickets: [{ ticketNumber: "000 1234567890", flightNumbers: [] }] },
   ],
   segments: [
     {
       airlineName: "Demo Airways", airlineCode: "DA", flightNumber: "DA 101", originCode: "ARN", originName: "Stockholm",
       destinationCode: "IST", destinationName: "Istanbul", departureDate: "2026-12-10", departureTime: "18:35",
       arrivalDate: "2026-12-10", arrivalTime: "23:15", duration: null, stops: null, cabin: "Economy", handCarry: "7 kg", checkIn: "20 kg",
-      departureTerminal: "5", arrivalTerminal: null, bookingClass: "Y", bookingStatus: "OK",
+      departureTerminal: "5", arrivalTerminal: null, bookingClass: "Y", bookingStatus: "OK", bookingReference: "DEMO42",
     },
   ],
   fareConditions: null,

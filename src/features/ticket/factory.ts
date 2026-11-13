@@ -18,9 +18,10 @@ export const createEmptyTicketSegment = (): TicketSegment => ({
   arrivalTerminal: null,
   bookingClass: null,
   bookingStatus: null,
+  bookingReference: null,
 });
 
-export const createEmptyPassenger = (): TicketPassenger => ({ id: newId(), name: null, type: null, dateOfBirth: null, ticketNumber: null });
+export const createEmptyPassenger = (): TicketPassenger => ({ id: newId(), name: null, type: null, dateOfBirth: null, ticketNumber: null, flightTicketNumbers: {} });
 
 export function createEmptyTicket(sourceType: Ticket["sourceType"] = "manual"): Ticket {
   const now = new Date().toISOString();
@@ -33,7 +34,7 @@ export function createEmptyTicket(sourceType: Ticket["sourceType"] = "manual"): 
     bookingReference: null,
     airlineReference: null,
     issueDate: null,
-    issuedBy: null,
+    issuedBy: brand.legalName,
     passengers: [createEmptyPassenger()],
     segments: [createEmptyTicketSegment()],
     fareConditions: null,
@@ -67,20 +68,50 @@ function passengerType(printed: string | null, dateOfBirth: string | null, first
   return age < 0 ? null : age < 2 ? "infant" : age < 12 ? "child" : "adult";
 }
 
-function passengerFromExtraction(p: ExtractedTicketPassenger, index: number, firstFlight: string | null, flags: ReviewFlag[]): TicketPassenger {
+const flightKey = (value: string | null) => (value ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+/** The value used on the most flights (the first one on a tie), or null. */
+function mostUsed(values: (string | null)[]): string | null {
+  const counts = new Map<string, number>();
+  for (const v of values) if (v) counts.set(v, (counts.get(v) ?? 0) + 1);
+  let best: string | null = null;
+  for (const [v, n] of counts) if (best === null || n > counts.get(best)!) best = v;
+  return best;
+}
+
+/**
+ * Each flight's e-ticket number for one traveller: the ticket that lists the flight, else one that covers every
+ * flight. The number used most becomes the traveller's main number; the others are kept per flight.
+ */
+function ticketNumbersFor(p: ExtractedTicketPassenger, segments: TicketSegment[]): Pick<TicketPassenger, "ticketNumber" | "flightTicketNumbers"> {
+  const tickets = p.tickets.flatMap((t) => (clean(t.ticketNumber) ? [{ number: clean(t.ticketNumber)!, flights: t.flightNumbers.map(flightKey) }] : []));
+  const perFlight = segments.map((s) =>
+    (tickets.find((t) => t.flights.includes(flightKey(s.flightNumber))) ?? tickets.find((t) => t.flights.length === 0))?.number ?? null);
+  const main = mostUsed(perFlight) ?? tickets[0]?.number ?? null;
+  const flightTicketNumbers: Record<string, string> = {};
+  segments.forEach((s, i) => {
+    if (perFlight[i] && perFlight[i] !== main) flightTicketNumbers[s.id] = perFlight[i]!;
+  });
+  return { ticketNumber: main, flightTicketNumbers };
+}
+
+function passengerFromExtraction(p: ExtractedTicketPassenger, index: number, segments: TicketSegment[], flags: ReviewFlag[]): TicketPassenger {
   const dateOfBirth = normalizeFormatted(p.dateOfBirth, ISO_DATE, `passengers.${index}.dateOfBirth`, flags);
   return {
     id: newId(),
     name: clean(p.name),
-    type: passengerType(clean(p.type), dateOfBirth, firstFlight),
+    type: passengerType(clean(p.type), dateOfBirth, segments[0]?.departureDate ?? null),
     dateOfBirth,
-    ticketNumber: clean(p.ticketNumber),
+    ...ticketNumbersFor(p, segments),
   };
 }
 
+/** A flag on one of a traveller's tickets is shown on the traveller's e-ticket number. */
+const formField = (field: string) => field.replace(/^passengers\.(\d+)\.tickets(?:\..*)?$/, "passengers.$1.ticketNumber");
+
 export function ticketFromExtraction(extraction: TicketExtraction, meta: { fileNames: string[]; demo: boolean }): Ticket {
   const base = createEmptyTicket(meta.demo ? "demo" : "upload");
-  const flags: ReviewFlag[] = extraction.uncertainFields.map((u) => ({ field: u.field, reason: u.reason, evidence: clean(u.evidence) }));
+  const flags: ReviewFlag[] = extraction.uncertainFields.map((u) => ({ field: formField(u.field), reason: u.reason, evidence: clean(u.evidence) }));
 
   const segments: TicketSegment[] = extraction.segments.map((s, i) => ({
     ...segmentFromExtraction(s, i, flags),
@@ -88,19 +119,20 @@ export function ticketFromExtraction(extraction: TicketExtraction, meta: { fileN
     arrivalTerminal: clean(s.arrivalTerminal),
     bookingClass: clean(s.bookingClass),
     bookingStatus: clean(s.bookingStatus),
+    bookingReference: clean(s.bookingReference),
   }));
-  const firstFlight = segments[0]?.departureDate ?? null;
-  const passengers = extraction.passengers.map((p, i) => passengerFromExtraction(p, i, firstFlight, flags));
+  const passengers = extraction.passengers.map((p, i) => passengerFromExtraction(p, i, segments, flags));
+  // The reference most flights use is the ticket's; a flight keeps its own only when it differs.
+  const bookingReference = mostUsed(segments.map((s) => s.bookingReference)) ?? clean(extraction.bookingReference);
 
   return {
     ...base,
     sourceFileNames: meta.fileNames,
-    bookingReference: clean(extraction.bookingReference),
+    bookingReference,
     airlineReference: clean(extraction.airlineReference),
     issueDate: normalizeFormatted(extraction.issueDate, ISO_DATE, "issueDate", flags),
-    issuedBy: clean(extraction.issuedBy),
     passengers: passengers.length ? passengers : base.passengers,
-    segments: segments.length ? segments : base.segments,
+    segments: segments.length ? segments.map((s) => (s.bookingReference === bookingReference ? { ...s, bookingReference: null } : s)) : base.segments,
     fareConditions: clean(extraction.fareConditions),
     reviewFlags: flags,
   };

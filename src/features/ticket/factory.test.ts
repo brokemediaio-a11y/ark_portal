@@ -16,7 +16,7 @@ const extraction = (passengers: TicketExtraction["passengers"]): TicketExtractio
     {
       airlineName: null, airlineCode: "RQ", flightNumber: "9919", originCode: "KBL", originName: "Kabul", destinationCode: "SAW",
       destinationName: "Istanbul", departureDate: "2026-10-27", departureTime: "22:20", arrivalDate: "2026-10-28", arrivalTime: "02:30",
-      duration: null, stops: null, cabin: null, handCarry: null, checkIn: "30 kg", departureTerminal: null, arrivalTerminal: null, bookingClass: "K", bookingStatus: "OK",
+      duration: null, stops: null, cabin: null, handCarry: null, checkIn: "30 kg", departureTerminal: null, arrivalTerminal: null, bookingClass: "K", bookingStatus: "OK", bookingReference: null,
     },
   ],
   fareConditions: null,
@@ -24,10 +24,10 @@ const extraction = (passengers: TicketExtraction["passengers"]): TicketExtractio
 });
 
 const NOORI_FAMILY = [
-  { name: "NOORI / FARHAD", type: null, dateOfBirth: "1994-02-07", ticketNumber: "3842408145179" },
-  { name: "NOORI / ELSA ASAL", type: null, dateOfBirth: "2023-06-14", ticketNumber: "3842408145181" },
-  { name: "NOORI / MERSA", type: null, dateOfBirth: "2024-11-30", ticketNumber: "3842408145182" },
-  { name: "JAWED/ERFANULLAH", type: "Adult", dateOfBirth: null, ticketNumber: null },
+  { name: "NOORI / FARHAD", type: null, dateOfBirth: "1994-02-07", tickets: [{ ticketNumber: "3842408145179", flightNumbers: [] }] },
+  { name: "NOORI / ELSA ASAL", type: null, dateOfBirth: "2023-06-14", tickets: [{ ticketNumber: "3842408145181", flightNumbers: [] }] },
+  { name: "NOORI / MERSA", type: null, dateOfBirth: "2024-11-30", tickets: [{ ticketNumber: "3842408145182", flightNumbers: [] }] },
+  { name: "JAWED/ERFANULLAH", type: "Adult", dateOfBirth: null, tickets: [] },
 ];
 
 describe("ticketFromExtraction", () => {
@@ -39,7 +39,7 @@ describe("ticketFromExtraction", () => {
   });
 
   it("drops a badly formatted date of birth and flags it", () => {
-    const ticket = ticketFromExtraction(extraction([{ name: "A/B", type: null, dateOfBirth: "07FEB94", ticketNumber: "1" }]), { fileNames: [], demo: false });
+    const ticket = ticketFromExtraction(extraction([{ name: "A/B", type: null, dateOfBirth: "07FEB94", tickets: [{ ticketNumber: "1", flightNumbers: [] }] }]), { fileNames: [], demo: false });
     expect(ticket.passengers[0].dateOfBirth).toBeNull();
     expect(ticket.reviewFlags.map((f) => f.field)).toContain("passengers.0.dateOfBirth");
   });
@@ -47,7 +47,7 @@ describe("ticketFromExtraction", () => {
 
 describe("reviewTicket", () => {
   it("blocks a ticket without a passenger name, and only warns about a missing ticket number", () => {
-    const ticket = ticketFromExtraction(extraction([{ name: null, type: null, dateOfBirth: null, ticketNumber: null }]), { fileNames: [], demo: false });
+    const ticket = ticketFromExtraction(extraction([{ name: null, type: null, dateOfBirth: null, tickets: [] }]), { fileNames: [], demo: false });
     const issues = reviewTicket(ticket, "2026-10-01");
     expect(issues.filter((i) => i.level === "blocking").map((i) => i.field)).toEqual(["passengers", "passengers.0.name"]);
     expect(issues.find((i) => i.field === "passengers.0.ticketNumber")?.level).toBe("warning");

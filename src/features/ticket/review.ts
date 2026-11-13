@@ -16,12 +16,12 @@ export function reviewTicket(t: Ticket, today: string = localToday()): ReviewIss
   t.passengers.forEach((p, i) => {
     const label = `Passenger ${i + 1}`;
     if (!p.name) issues.push({ field: `passengers.${i}.name`, level: "blocking", message: `${label}: name is missing.` });
-    if (!p.ticketNumber) issues.push({ field: `passengers.${i}.ticketNumber`, level: "warning", message: `${label}: ticket number is missing.` });
+    if (!p.ticketNumber && !Object.keys(p.flightTicketNumbers).length) issues.push({ field: `passengers.${i}.ticketNumber`, level: "warning", message: `${label}: ticket number is missing.` });
     if (p.dateOfBirth && !ISO_DATE.test(p.dateOfBirth))
       issues.push({ field: `passengers.${i}.dateOfBirth`, level: "blocking", message: `${label}: date of birth is not a valid date.` });
   });
 
-  if (!t.bookingReference) issues.push({ field: "bookingReference", level: "warning", message: "Booking reference is missing." });
+  if (!t.bookingReference && !t.segments.some((s) => s.bookingReference)) issues.push({ field: "bookingReference", level: "warning", message: "Booking reference is missing." });
 
   if (t.segments.length === 0) issues.push({ field: "segments", level: "blocking", message: "Add at least one flight." });
   t.segments.forEach((s, i) =>

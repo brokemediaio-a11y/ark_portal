@@ -120,12 +120,25 @@ function Route({ segment }: { segment: CustomerSegment }) {
   );
 }
 
-function AirlineMark({ segment, src }: { segment: CustomerSegment; src: string | undefined }) {
+/**
+ * The airline's logo, or its code when no logo is available. A flight whose airline isn't named (a charter sold by
+ * an agency) shows a plane instead: a logo looked up from a bare code could belong to another airline.
+ */
+export function AirlineMark({ airline, src, size = 18 }: { airline: { airlineName: string | null; airlineCode: string | null }; src: string | undefined; size?: number }) {
+  const box = { width: size, height: size, marginRight: size * 0.39 };
+  if (!airline.airlineName)
+    return (
+      <View style={[s.airlineBadge, box]}>
+        <Svg viewBox="0 0 24 24" style={{ width: size * 0.7, height: size * 0.7 }}>
+          <G transform="rotate(45 12 12)"><Path d={PLANE_PATH} fill={c.primary} /></G>
+        </Svg>
+      </View>
+    );
   // eslint-disable-next-line jsx-a11y/alt-text -- react-pdf Image has no alt
-  if (src) return <Image src={src} style={s.airlineLogo} />;
+  if (src) return <Image src={src} style={[s.airlineLogo, box]} />;
   return (
-    <View style={s.airlineBadge}>
-      <Text style={s.airlineBadgeText}>{segment.airlineCode ?? "—"}</Text>
+    <View style={[s.airlineBadge, box]}>
+      <Text style={[s.airlineBadgeText, { fontSize: size * 0.36 }]}>{airline.airlineCode ?? "—"}</Text>
     </View>
   );
 }
@@ -161,7 +174,7 @@ export function FlightCard({ segment, logo }: { segment: CustomerSegment; logo: 
     <View style={useMobilePdf() ? [s.segment, { flexShrink: 0 }] : s.segment} wrap={false}>
       <View style={s.segmentHead}>
         <View style={s.airline}>
-          <AirlineMark segment={segment} src={logo} />
+          <AirlineMark airline={segment} src={logo} />
           <View>
             <Text {...KEEP_WORDS} style={[s.airlineName, scriptFont(segment.airlineName)]}>{segment.airlineName ?? segment.flightNumber ?? "Airline to be confirmed"}</Text>
             {segment.airlineName && segment.flightNumber && <Text style={s.segmentFlight}>{segment.flightNumber}</Text>}

@@ -179,14 +179,14 @@ const tahiriAnswer = (over: Partial<TicketExtraction> = {}): TicketExtraction =>
   issueDateAsPrinted: "1405/07/15",
   issuedBy: null,
   passengers: [
-    { name: "TAHIRI / QODRATULLAH MR.", type: null, dateOfBirth: null, ticketNumber: "4911013760658" },
-    { name: "TAHIRI / QODRATULLAH MR.", type: null, dateOfBirth: null, ticketNumber: "4911013760658" },
+    { name: "TAHIRI / QODRATULLAH MR.", type: null, dateOfBirth: null, tickets: [{ ticketNumber: "4911013760658", flightNumbers: [] }] },
+    { name: "TAHIRI / QODRATULLAH MR.", type: null, dateOfBirth: null, tickets: [{ ticketNumber: "4911013760658", flightNumbers: [] }] },
   ],
   segments: [
     {
       airlineName: null, airlineCode: null, flightNumber: "B9-9735", originCode: "MHD", originName: "Mashhad", destinationCode: "IST",
       destinationName: "Istanbul", departureDate: "2026-10-18", departureTime: "08:00", arrivalDate: "2026-10-18", arrivalTime: "11:30",
-      duration: null, stops: null, cabin: "Y", handCarry: null, checkIn: "30 kg", departureTerminal: null, arrivalTerminal: null, bookingClass: "Y", bookingStatus: null,
+      duration: null, stops: null, cabin: "Y", handCarry: null, checkIn: "30 kg", departureTerminal: null, arrivalTerminal: null, bookingClass: "Y", bookingStatus: null, bookingReference: "4S2JX",
     },
   ],
   fareConditions: null,
@@ -199,7 +199,7 @@ describe("extractDocuments (tickets)", () => {
     const { data } = await extractDocuments([file("ticket.png", PNG)], fakeProvider(tahiriAnswer(), [TAHIRI, TAHIRI]), ticketTask);
     expect(data.issueDate).toBe("2026-10-07");
     expect(data.passengers).toHaveLength(1);
-    expect(data.passengers[0]).toMatchObject({ name: "TAHIRI / QODRATULLAH MR.", ticketNumber: "4911013760658" });
+    expect(data.passengers[0]).toMatchObject({ name: "TAHIRI / QODRATULLAH MR.", tickets: [{ ticketNumber: "4911013760658" }] });
   });
 
   it("drops an airport code that isn't printed, quietly when the name is, and a class letter given as the cabin", async () => {
@@ -209,14 +209,14 @@ describe("extractDocuments (tickets)", () => {
   });
 
   it("removes a ticket number that isn't printed, and flags one a reading contradicts", async () => {
-    const answer = tahiriAnswer({ passengers: [{ name: "TAHIRI / QODRATULLAH MR.", type: null, dateOfBirth: null, ticketNumber: "4911013760659" }] });
+    const answer = tahiriAnswer({ passengers: [{ name: "TAHIRI / QODRATULLAH MR.", type: null, dateOfBirth: null, tickets: [{ ticketNumber: "4911013760659", flightNumbers: [] }] }] });
     const removed = await extractDocuments([file("ticket.png", PNG)], fakeProvider(answer, [TAHIRI, TAHIRI]), ticketTask);
-    expect(removed.data.passengers[0].ticketNumber).toBeNull();
-    expect(removed.data.uncertainFields.map((f) => f.field)).toContain("passengers.0.ticketNumber");
+    expect(removed.data.passengers[0].tickets).toEqual([]);
+    expect(removed.data.uncertainFields.map((f) => f.field)).toContain("passengers.0.tickets.0.ticketNumber");
 
     const misread = TAHIRI.replace("4911013760658", "4911013760668");
     const flagged = await extractDocuments([file("ticket.png", PNG)], fakeProvider(tahiriAnswer(), [TAHIRI, misread]), ticketTask);
-    expect(flagged.data.passengers[0].ticketNumber).toBe("4911013760658");
-    expect(flagged.data.uncertainFields.map((f) => f.field)).toContain("passengers.0.ticketNumber");
+    expect(flagged.data.passengers[0].tickets[0].ticketNumber).toBe("4911013760658");
+    expect(flagged.data.uncertainFields.map((f) => f.field)).toContain("passengers.0.tickets.0.ticketNumber");
   });
 });

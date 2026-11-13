@@ -12,13 +12,19 @@ export const extractedTicketSegmentSchema = extractedSegmentSchema.extend({
   arrivalTerminal: text,
   bookingClass: text.describe("Booking / reservation class letter(s), e.g. K or Y1"),
   bookingStatus: text.describe("e.g. OK, CONFIRMED"),
+  bookingReference: text.describe("The booking reference / PNR printed for this flight, e.g. PTX09; the airline's booking reference over an agency order number"),
+});
+
+export const extractedTicketSchema = z.object({
+  ticketNumber: text.describe("E-ticket number exactly as printed"),
+  flightNumbers: z.array(z.string()).describe("Flight numbers this e-ticket covers, as printed; empty if it covers every flight of its document"),
 });
 
 export const extractedTicketPassengerSchema = z.object({
   name: text.describe("Exactly as printed, e.g. WROOR/MILA or NOORI / FARHAD"),
   type: text.describe("Passenger type only if printed: Adult, Child or Infant"),
   dateOfBirth: text.describe("YYYY-MM-DD, only if printed"),
-  ticketNumber: text.describe("E-ticket number exactly as printed"),
+  tickets: z.array(extractedTicketSchema).describe("Each e-ticket number of this traveller, with the flights it covers"),
 });
 
 export const ticketExtractionSchema = z.object({
@@ -33,7 +39,7 @@ export const ticketExtractionSchema = z.object({
   fareConditions: text.describe("Refund/change conditions exactly as printed"),
   uncertainFields: z.array(
     z.object({
-      field: z.string().describe('Path such as "segments.0.departureTime" or "passengers.1.ticketNumber"'),
+      field: z.string().describe('Path such as "segments.0.departureTime" or "passengers.1.tickets.0.ticketNumber"'),
       reason: z.string(),
       evidence: z.string().nullable(),
     }),
@@ -42,4 +48,5 @@ export const ticketExtractionSchema = z.object({
 
 export type ExtractedTicketSegment = z.infer<typeof extractedTicketSegmentSchema>;
 export type ExtractedTicketPassenger = z.infer<typeof extractedTicketPassengerSchema>;
+export type ExtractedTicket = z.infer<typeof extractedTicketSchema>;
 export type TicketExtraction = z.infer<typeof ticketExtractionSchema>;

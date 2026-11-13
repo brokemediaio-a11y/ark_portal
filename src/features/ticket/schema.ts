@@ -19,6 +19,8 @@ export const ticketSegmentSchema = withLegacyBaggage(flightSegmentShape.extend({
   arrivalTerminal: optionalText,
   bookingClass: optionalText,
   bookingStatus: optionalText,
+  /** This flight's booking reference when it differs between flights (several suppliers); otherwise the ticket's. */
+  bookingReference: optionalText.default(null),
 }));
 
 export const ticketPassengerSchema = z.object({
@@ -27,7 +29,10 @@ export const ticketPassengerSchema = z.object({
   type: z.enum(PASSENGER_TYPES).nullable(),
   /** YYYY-MM-DD */
   dateOfBirth: optionalText,
+  /** The e-ticket number, for every flight that has no number of its own below. */
   ticketNumber: optionalText,
+  /** E-ticket numbers that only cover some flights, by flight (segment id): one traveller, several suppliers. */
+  flightTicketNumbers: z.record(z.string(), z.string()).default({}),
 });
 
 export const ticketSchema = z.object({
