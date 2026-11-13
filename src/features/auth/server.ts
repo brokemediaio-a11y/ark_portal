@@ -40,7 +40,14 @@ export async function endSession() {
 }
 export function sameOrigin(request: Request) {
   const origin = request.headers.get("origin");
-  return origin === new URL(request.url).origin;
+  if (!origin) return false;
+  if (origin === new URL(request.url).origin) return true;
+  // Behind a reverse proxy (Caddy) the app only sees http://127.0.0.1, so also accept the
+  // scheme and host the proxy forwarded. The app listens on 127.0.0.1, so only the proxy sets these.
+  const first = (name: string) => request.headers.get(name)?.split(",")[0].trim();
+  const proto = first("x-forwarded-proto");
+  const host = first("x-forwarded-host") ?? first("host");
+  return Boolean(proto && host) && origin === `${proto}://${host}`;
 }
 export async function apiAccess(request: Request, permission?: Permission, allowPasswordChange = false) {
   if (!["GET", "HEAD"].includes(request.method) && !sameOrigin(request))

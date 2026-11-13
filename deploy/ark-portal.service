@@ -1,0 +1,18 @@
+[Unit]
+Description=Ark Travelers quotation portal
+After=network.target
+
+[Service]
+Type=simple
+User=deploy
+WorkingDirectory=/opt/ark_portal/current
+Environment=NODE_ENV=production
+# .env.local is read by Next.js from the working directory (a symlink to the shared copy).
+ExecStart=/usr/bin/node node_modules/next/dist/bin/next start --hostname 127.0.0.1 --port 3000
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
