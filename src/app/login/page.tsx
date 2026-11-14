@@ -3,14 +3,13 @@ import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import Image from "next/image";
 import { brand } from "@/config/brand";
-import { currentUser, hasAdmin } from "@/features/auth/server";
+import { currentUser } from "@/features/auth/server";
 import { AuthForm } from "@/features/auth/auth-form";
 
 async function Login() {
   await connection();
   const user = await currentUser();
   if (user) redirect(user.mustChangePassword ? "/change-password" : "/");
-  const setup = !hasAdmin();
   return (
     <main className="relative isolate flex min-h-svh flex-col items-center justify-center overflow-hidden bg-[#f3f5f7] px-4 py-10 sm:py-14">
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_15%_15%,#dce4ec_0%,transparent_50%),radial-gradient(ellipse_at_90%_90%,#f5ecde_0%,transparent_45%)]" />
@@ -31,12 +30,12 @@ async function Login() {
         <div className="px-6 pt-7 pb-7 sm:px-9 sm:pt-8">
           <div className="mb-7 text-center">
             <span aria-hidden className="mx-auto mb-4 block h-0.5 w-8 rounded-full bg-accent" />
-            <h1 id="login-heading" className="text-[26px] font-extrabold tracking-tight text-brand">{setup ? "Let’s get you started" : "Welcome back"}</h1>
+            <h1 id="login-heading" className="text-[26px] font-extrabold tracking-tight text-brand">Welcome back</h1>
             <p className="mx-auto mt-2 max-w-[300px] text-sm leading-relaxed text-ink-muted">
-              {setup ? "Create your administrator account to set up your team’s workspace." : "Sign in to your Ark Travelers workspace."}
+              Sign in to your Ark Travelers workspace.
             </p>
           </div>
-          <AuthForm mode={setup ? "setup" : "login"} />
+          <AuthForm mode="login" />
         </div>
       </section>
 

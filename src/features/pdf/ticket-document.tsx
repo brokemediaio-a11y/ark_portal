@@ -143,7 +143,7 @@ function Bookings({ bookings, airlineLogos }: { bookings: CoveredFlights[]; airl
   // The title and the list form one block, so the title never stays behind at the bottom of a page.
   return (
     <View wrap={false} style={{ flexShrink: 0 }}>
-      <Text style={pdfStyles.sectionTitle}>Booking references</Text>
+      <Text style={pdfStyles.sectionTitle}>PNR Number</Text>
       <View style={[s.table, mobile ? { marginBottom: 8 } : {}]}>
         <ColumnGrid items={bookings} maxColumns={mobile ? 3 : 4} airlineLogos={airlineLogos} />
       </View>
@@ -174,7 +174,7 @@ export function TicketDocument({ ticket, logoSrc = null, airlineLogos = {}, layo
         </View>
 
         <MetaGrid>
-          {ticket.bookings.length <= 1 && <Meta label="Booking reference" value={ticket.bookingReference} />}
+          {ticket.bookings.length <= 1 && <Meta label="PNR Number" value={ticket.bookingReference} />}
           {ticket.airlineReference && <Meta label="Airline reference" value={ticket.airlineReference} />}
           <Meta label="Issue date" value={ticket.issueDate} />
           <Meta label="Issued by" value={ticket.issuedBy} />

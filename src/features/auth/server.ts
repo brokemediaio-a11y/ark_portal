@@ -11,7 +11,6 @@ export function publicUser(row: Record<string, unknown>): PortalUser {
   return { id: String(row.id), name: String(row.name), email: String(row.email), role: row.role as Role,
     active: Boolean(row.active), mustChangePassword: Boolean(row.must_change_password) };
 }
-export function hasAdmin() { return Boolean(db().prepare("SELECT id FROM users LIMIT 1").get()); }
 export async function currentUser(): Promise<PortalUser | null> {
   const token = (await cookies()).get(COOKIE)?.value;
   if (!token) return null;

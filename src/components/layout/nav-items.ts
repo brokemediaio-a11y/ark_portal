@@ -1,4 +1,4 @@
-import { FileStack, FilePlus2, Home, Search, Ticket, TicketCheck, Users, type LucideIcon } from "lucide-react";
+import { FileStack, FilePlus2, Home, Search, Ticket, TicketCheck, Users, KeyRound, Database, Settings, type LucideIcon } from "lucide-react";
 
 export interface NavItem {
   href: string;
@@ -15,6 +15,9 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { href: "/tickets/new", label: "Convert a ticket", hint: "Supplier ticket to Ark e-ticket", icon: TicketCheck },
   { href: "/quotations", label: "My quotations", hint: "Continue or download", icon: FileStack },
   { href: "/tickets", label: "My tickets", hint: "Ark e-tickets you made", icon: Ticket },
+  { href: "/settings", label: "Settings", hint: "Change your password", icon: Settings },
+  { href: "/admin/recovery", label: "Password requests", hint: "Recover account access", icon: KeyRound },
+  { href: "/admin/database", label: "Database", hint: "Browse and back up records", icon: Database },
   { href: "/admin/users", label: "Users & access", hint: "Manage your team", icon: Users },
 ];
 

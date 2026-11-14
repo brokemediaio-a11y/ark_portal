@@ -1,8 +1,9 @@
 import { randomBytes, scrypt as derive, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
+import { z } from "zod";
 
 const scrypt = promisify(derive);
-export const temporaryPassword = () => randomBytes(18).toString("base64url");
+export const strongPassword = z.string().min(12, "Use at least 12 characters.").max(256);
 export async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
   const key = await scrypt(password, salt, 64) as Buffer;

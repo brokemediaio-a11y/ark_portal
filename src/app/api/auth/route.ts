@@ -1,11 +1,11 @@
-import { randomUUID, createHash, timingSafeEqual } from "node:crypto";
+import { createHash } from "node:crypto";
 import { z } from "zod";
+import { requestRecovery } from "@/features/auth/recovery";
 import { db, audit } from "@/features/auth/database";
-import { hashPassword, verifyPassword } from "@/features/auth/password";
-import { currentUser, endSession, hasAdmin, sameOrigin, startSession } from "@/features/auth/server";
+import { hashPassword, strongPassword, verifyPassword } from "@/features/auth/password";
+import { currentUser, endSession, sameOrigin, startSession } from "@/features/auth/server";
 
 const credentials = z.object({ email: z.email().max(254).transform(v => v.toLowerCase()), password: z.string().min(1).max(256) });
-const strongPassword = z.string().min(12, "Use at least 12 characters.").max(256);
 const fail = (error: string, status = 400) => Response.json({ ok: false, error }, { status });
 const sha = (s: string) => createHash("sha256").update(s).digest();
 
@@ -23,31 +23,23 @@ export async function POST(request: Request) {
     if (!await verifyPassword(parsed.data.currentPassword, String(row.password_hash))) return fail("Current password is incorrect.");
     if (parsed.data.currentPassword === parsed.data.password) return fail("Choose a different password.");
     const hash = await hashPassword(parsed.data.password);
-    db().prepare("UPDATE users SET password_hash=?,must_change_password=0 WHERE id=?").run(hash, user.id);
-    db().prepare("DELETE FROM sessions WHERE user_id=?").run(user.id);
-    audit(user.id, "password.changed", user.email);
+    const database = db(); database.exec("BEGIN IMMEDIATE");
+    try {
+      // A concurrent reset must not be overwritten using an old password/session.
+      const changed = database.prepare("UPDATE users SET password_hash=?,must_change_password=0 WHERE id=? AND password_hash=?")
+        .run(hash, user.id, row.password_hash);
+      if (!changed.changes) { database.exec("ROLLBACK"); return fail("Your password changed. Please sign in again.", 409); }
+      database.prepare("DELETE FROM sessions WHERE user_id=?").run(user.id);
+      database.prepare("UPDATE password_reset_requests SET status='resolved',handled_at=?,handled_by=? WHERE user_id=? AND status='pending'")
+        .run(new Date().toISOString(), user.id, user.id);
+      audit(user.id, "password.changed", user.email);
+      database.exec("COMMIT");
+    } catch (error) { database.exec("ROLLBACK"); throw error; }
     await startSession(user.id);
     return Response.json({ ok: true, next: "/" });
   }
-  if (body.action === "setup") {
-    const key = process.env.PORTAL_SETUP_KEY;
-    if (!key || key.length < 24 || hasAdmin() || typeof body.setupKey !== "string" || !timingSafeEqual(sha(key), sha(body.setupKey)))
-      return fail("Administrator setup is unavailable or the setup key is incorrect.", 403);
-    const parsed = credentials.extend({ name: z.string().trim().min(2).max(100), password: strongPassword }).safeParse(body);
-    if (!parsed.success) return fail(parsed.error.issues[0].message);
-    const hash = await hashPassword(parsed.data.password);
-    const id = randomUUID();
-    // Recheck inside the write transaction: only one request can bootstrap an admin.
-    const database = db(); database.exec("BEGIN IMMEDIATE");
-    try {
-      if (hasAdmin()) { database.exec("ROLLBACK"); return fail("Administrator already exists.", 409); }
-      database.prepare("INSERT INTO users VALUES (?,?,?,?,?,1,0,?)").run(id, parsed.data.name, parsed.data.email, hash, "admin", new Date().toISOString());
-      audit(id, "admin.setup", parsed.data.email);
-      database.exec("COMMIT");
-    } catch (error) { database.exec("ROLLBACK"); throw error; }
-    await startSession(id);
-    return Response.json({ ok: true, next: "/admin/users" });
-  }
+  if (body.action === "setup") return fail("Public registration is disabled. Contact your administrator.", 403);
+  if (body.action === "forgot-password") return requestRecovery(request, body);
   if (body.action !== "login") return fail("Unknown action.");
   const parsed = credentials.safeParse(body);
   if (!parsed.success) return fail("Enter your email and password.");
@@ -61,8 +53,10 @@ export async function POST(request: Request) {
   // Do equally expensive work for nonexistent users to avoid a cheap timing oracle.
   const valid = await verifyPassword(password, row ? String(row.password_hash) : `scrypt:${"0".repeat(32)}:${"0".repeat(128)}`);
   if (!row || !valid || !row.active) return fail("Email or password is incorrect.", 401);
+  const latest = db().prepare("SELECT * FROM users WHERE id=? AND password_hash=? AND active=1").get(row.id, row.password_hash);
+  if (!latest) return fail("Email or password is incorrect.", 401);
   db().prepare("DELETE FROM login_attempts WHERE key=?").run(key);
   audit(String(row.id), "login", email);
   await startSession(String(row.id));
-  return Response.json({ ok: true, next: row.must_change_password ? "/change-password" : "/" });
+  return Response.json({ ok: true, next: latest.must_change_password ? "/change-password" : "/" });
 }

@@ -129,7 +129,6 @@ Requirements: Node.js 22.13+ (uses built-in SQLite) and one persistent server/VP
 ```bash
 npm install
 cp .env.example .env.local   # then edit .env.local
-npm run setup:key            # generates a one-time setup key in .env.local
 npm run dev                  # http://localhost:3000/login
 ```
 
@@ -163,18 +162,23 @@ To try the app **without an AI key**, set `EXTRACTION_PROVIDER=mock` in `.env.lo
 
 ## Login and employee access
 
-Open `/login`, enter the setup key printed by `npm run setup:key`, and create the client's administrator account. Setup is disabled once the first account exists. Remove `PORTAL_SETUP_KEY` from the server environment after setup. There is no public registration.
+Public signup is disabled. The application initializes two accounts once: client administrator `info@arktravelers.com` and development super administrator `admin@nexordis.com`. Their agreed bootstrap passwords are stored only as server-side scrypt hashes; obtain the initial credentials privately from the development team. Both accounts must replace their temporary password before accessing the portal. Changed passwords are never overwritten on restart or redeploy, and existing accounts with the same email are preserved during upgrades.
 
-The administrator opens **Users & access**, enters an employee's name and email, and selects a role. The app generates a temporary password and provides **Copy login details**. Share these credentials privately. Employees must replace temporary passwords on first login. Passwords require at least 12 characters and are salted and hashed with scrypt; they cannot be retrieved later.
+The administrator opens **Users & access**, enters an employee's name, email and temporary password, and selects a role. Share the login details privately. On first sign-in the user chooses their own password; the prompt does not recur on subsequent sign-ins. All users can change their password later in **Settings**, using their current password. New passwords require 12–256 characters and are salted and hashed with scrypt; passwords are never returned by the API or recorded in audit entries.
+
+**Forgot password?** on `/login` submits a request to the super administrator's **Password requests** inbox, including requests from administrators and super administrators. The development team verifies the requester privately, issues a new temporary password and shares it privately. Resetting a password signs out existing sessions, resolves pending requests and requires one password change at the next sign-in. No email is sent automatically. Recovery responses do not reveal whether an email exists, and requests are throttled and deduplicated.
 
 | Role | Access |
 | --- | --- |
 | PDF Converter | Upload, edit, and download their own quotations and branded e-tickets |
 | Travel Agent | Converter tools plus flight search; own documents only |
 | Manager | Agent tools plus deletion of their own documents; no access to other employees' records |
-| Administrator | All portal tools, all documents, user creation, role changes, disabling, password resets, and recent activity |
+| Administrator | All portal tools, all documents, user creation, role changes, disabling, password resets and recent activity; cannot manage super administrators |
+| Super administrator | All administrator tools, management of every account, account deletion, recovery inbox, database record browsing and complete SQLite backup downloads |
 
-All employees' documents are private to their accounts. Administrators can view, edit, and delete agency records. Role checks protect the API as well as navigation. Admins cannot disable or demote themselves, and at least one administrator must remain active. Changing an account's role, email or status revokes its sessions. Password resets revoke sessions immediately and require another password change. Sessions expire after eight hours. Sign-in attempts are limited per email with durable database counters; extraction and flight API limits are per user, per process.
+All employees' documents are private to their accounts. Administrators and super administrators can view, edit and delete agency records. API checks enforce the same permissions as navigation. Normal administrators cannot grant super administrator access or edit/reset/disable a super administrator. The last active super administrator is protected; accounts cannot disable/demote/delete themselves. A super administrator may reset their own password, which signs them out. Changing roles, email or status revokes sessions. Sessions expire after eight hours. Sign-in attempts use durable per-email throttling; extraction and flight API limits are per user, per process.
+
+Database previews omit password and session-token hashes; downloaded snapshots contain the complete private database. Only super administrators can access these tools. Account deletion by a super administrator removes the account's sessions and documents while retaining audit history.
 
 The first administrator can use **Import from this browser** on the users page to claim existing browser-local quotations and tickets. Import skips existing server records and preserves the old browser copy. Import only the agency's records, then clear old localStorage on shared employee computers; existing browser copies cannot be protected retroactively by server permissions.
 
@@ -182,7 +186,9 @@ The first administrator can use **Import from this browser** on the users page t
 
 Set `PORTAL_DATABASE_PATH` to a private, persistent disk path (default `data/portal.sqlite`). Run one application instance, outside the public/static directory, with HTTPS in production. The SQLite directory must be writable only by the service account. Back up the database with SQLite's backup tooling or stop the service and copy the database together with its `-wal` and `-shm` files. Do not deploy this SQLite setup on ephemeral/serverless storage. Production cookies are Secure and require HTTPS; a reverse proxy must preserve the public request origin for write checks.
 
-No email is sent automatically. Administrators manually share temporary credentials and handle password resets. MFA, invitation emails, password recovery emails, custom role editing, and price/markup approvals are not included. The audit screen records sign-ins, account changes, document creation and deletion, rather than individual document field edits or browser PDF downloads.
+If the development team cannot sign in, a VPS operator can run `npm run auth:recover -- admin@nexordis.com` from the deployed application directory with its configured `PORTAL_DATABASE_PATH`. The command prompts for a new temporary password without echoing it, revokes sessions and requires one password change on next login. This is a server-only recovery tool, with no public recovery bypass.
+
+No email is sent automatically. MFA, invitation emails, password recovery emails, custom role editing, and price/markup approvals are not included. The audit screen records sign-ins, account changes, document creation and deletion, rather than individual document field edits or browser PDF downloads.
 
 The API contract is documented in `src/features/auth/contract.md`. Access-boundary tests exercise authentication, ownership, role restrictions, session revocation, resets, bootstrap, and login throttling without calling paid providers.
 

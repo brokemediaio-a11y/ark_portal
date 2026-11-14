@@ -29,7 +29,7 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
 function NavLinks({ pathname, onNavigate }: { pathname: string | null; onNavigate?: () => void }) {
   const user = usePortalUser();
   return (
-    <nav aria-label="Main">
+    <nav aria-label="Main" className="min-h-0 overflow-y-auto">
       <ul className="space-y-1">
         {NAV_ITEMS.filter(item => user && canVisit(user.role, item.href)).map(({ href, label, hint, icon: Icon }) => {
           const active = pathname !== null && isActive(pathname, href);
@@ -63,7 +63,7 @@ function NavLinks({ pathname, onNavigate }: { pathname: string | null; onNavigat
 export function AppShell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const user = usePortalUser();
-  const account = <div className="space-y-2 px-3 text-sm text-white"><p className="font-semibold">{user?.name}</p><p className="text-xs text-white/60">{user && ROLES[user.role].label}</p><div className="flex gap-4"><Link href="/change-password" className="underline">Password</Link><SignOut /></div></div>;
+  const account = <div className="space-y-2 px-3 text-sm text-white"><p className="font-semibold">{user?.name}</p><p className="text-xs text-white/60">{user && ROLES[user.role].label}</p><div className="flex gap-4"><Link href="/settings" className="underline">Settings</Link><SignOut /></div></div>;
 
   useEffect(() => {
     if (!open) return;
@@ -101,7 +101,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </button>
       </header>
       {open && (
-        <div id="mobile-nav" className="fixed inset-x-0 top-20 z-20 bg-brand p-3 shadow-lg lg:hidden">
+        <div id="mobile-nav" className="fixed inset-x-0 top-20 z-20 max-h-[calc(100dvh-5rem)] overflow-y-auto bg-brand p-3 shadow-lg lg:hidden">
           <Suspense fallback={<NavLinks pathname={null} />}>
             <NavList onNavigate={() => setOpen(false)} />
           </Suspense>

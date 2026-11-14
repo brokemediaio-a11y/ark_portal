@@ -56,7 +56,6 @@ DUFFEL_ENV=test
 DUFFEL_TEST_ACCESS_TOKEN=...
 DUFFEL_LIVE_ACCESS_TOKEN=...
 PORTAL_DATABASE_PATH=/var/lib/ark-portal/portal.sqlite
-PORTAL_SETUP_KEY=<output of: openssl rand -hex 32>
 ```
 
 Use new keys here, not ones that have been pasted into chats. Start with `DUFFEL_ENV=test` and switch to `live` when ready.
@@ -91,9 +90,28 @@ check, so broken code cannot reach `main`.
 
 ## 5. First deploy and admin account
 
-Push to `main` (or run the workflow from the Actions tab). When it is green, open `https://your-domain/login`
-and create the administrator with the setup key. Then remove `PORTAL_SETUP_KEY` from
-`/opt/ark_portal/shared/.env.local` and run `sudo systemctl restart ark-portal`.
+Push to `main` (or run the workflow from the Actions tab). When it is green, open `https://your-domain/login`.
+Public signup is disabled. Two accounts are initialized once: client administrator `info@arktravelers.com`
+and development super administrator `admin@nexordis.com`. Use the initial passwords agreed privately with
+Nexordis; both must change their password on first sign-in. No setup key or bootstrap environment variable is required.
+
+Create additional users in **Users & access**, where the administrator enters a temporary password. Each user
+must replace it on first sign-in; normal later sign-ins do not prompt again. Password changes remain saved across
+restarts and deployments. Existing accounts with matching bootstrap emails are preserved, not reset.
+
+The development team's super administrator can manage all accounts, handle **Password requests**, and browse or
+back up the database. Forgot-password requests appear in that inbox; verify the requester privately before
+resetting their password and sharing a temporary password. No recovery emails are sent automatically.
+
+If no super administrator can sign in, SSH as the deployment user, change to `/opt/ark_portal/current`, and run:
+
+```bash
+npm run auth:recover -- admin@nexordis.com
+```
+
+The command reads the shared `.env.local` database path, prompts for a new temporary password without echoing it,
+and signs out existing sessions. It does not recreate or reset any other account. Existing accounts and documents
+are preserved when the database is upgraded to support super administrators.
 
 ## Everyday use
 

@@ -1,32 +1,37 @@
 "use client";
 import { useState, type FormEvent } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Eye, EyeOff, KeyRound, LockKeyhole, Mail, UserRound, type LucideIcon } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail, type LucideIcon } from "lucide-react";
 
-export function AuthForm({ mode }: { mode: "login" | "setup" | "change-password" }) {
+export function AuthForm({ mode }: { mode: "login" | "forgot-password" | "change-password" }) {
   const [error, setError] = useState(""); const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
   async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setError(""); setBusy(true);
+    event.preventDefault(); setError(""); setMessage("");
     const data = Object.fromEntries(new FormData(event.currentTarget));
+    if (mode === "change-password" && data.password !== data.confirmPassword) { setError("The new passwords do not match."); return; }
+    setBusy(true);
     try {
       const response = await fetch("/api/auth", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...data, action: mode }) });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Please try again.");
+      if (mode === "forgot-password") { setMessage(result.message); setBusy(false); return; }
       window.location.assign(result.next || "/");
     } catch (e) { setError(e instanceof Error ? e.message : "Could not connect. Try again."); setBusy(false); }
   }
   return (
     <form onSubmit={submit} className="space-y-5">
       <fieldset disabled={busy} className="space-y-5">
-        {mode === "setup" && <><Field name="setupKey" label="Setup key" type="password" icon={KeyRound} autoComplete="off" placeholder="Enter your setup key" /><Field name="name" label="Your name" icon={UserRound} autoComplete="name" placeholder="Full name" /></>}
         {mode !== "change-password" && <Field name="email" label="Email address" type="email" icon={Mail} autoComplete="username" placeholder="you@arktravelers.com" autoCapitalize="none" spellCheck={false} />}
         {mode === "change-password" && <Field name="currentPassword" label="Current / temporary password" type="password" icon={LockKeyhole} autoComplete="current-password" />}
-        <Field name="password" label={mode === "login" ? "Password" : "New password (at least 12 characters)"} type="password" icon={LockKeyhole} autoComplete={mode === "login" ? "current-password" : "new-password"} minLength={mode === "login" ? 1 : 12} placeholder={mode === "login" ? "Enter your password" : "Choose a strong password"} />
+        {mode !== "forgot-password" && <Field name="password" label={mode === "login" ? "Password" : "New password (at least 12 characters)"} type="password" icon={LockKeyhole} autoComplete={mode === "login" ? "current-password" : "new-password"} minLength={mode === "login" ? 1 : 12} maxLength={256} placeholder={mode === "login" ? "Enter your password" : "Choose a strong password"} />}
+        {mode === "change-password" && <Field name="confirmPassword" label="Confirm new password" type="password" icon={LockKeyhole} autoComplete="new-password" minLength={12} maxLength={256} />}
       </fieldset>
       {error && <p role="alert" className="rounded-xl border border-danger/15 bg-danger-soft px-4 py-3 text-sm leading-relaxed text-danger">{error}</p>}
-      <Button type="submit" loading={busy} iconRight={ArrowRight} className="h-12 w-full rounded-xl font-semibold shadow-[0_4px_12px_rgba(31,48,67,0.14)]">{mode === "login" ? "Sign in" : mode === "setup" ? "Create administrator account" : "Save new password"}</Button>
-      {mode === "login" && <div className="border-t border-line/70 pt-5 text-center text-xs leading-relaxed text-ink-muted"><p>Need access or help signing in?</p><p className="mt-1 font-medium text-brand">Contact your administrator.</p></div>}
-      {mode === "setup" && <p className="text-center text-xs leading-relaxed text-ink-muted">Use the setup key provided by your system administrator.</p>}
+      {message && <p role="status" className="rounded-xl border border-brand/15 bg-brand-soft px-4 py-3 text-sm leading-relaxed text-brand">{message}</p>}
+      <Button type="submit" loading={busy} iconRight={ArrowRight} className="h-12 w-full rounded-xl font-semibold shadow-[0_4px_12px_rgba(31,48,67,0.14)]">{mode === "login" ? "Sign in" : mode === "forgot-password" ? "Request password reset" : "Save new password"}</Button>
+      {mode === "login" && <div className="border-t border-line/70 pt-5 text-center text-xs leading-relaxed text-ink-muted"><Link href="/forgot-password" className="font-medium text-brand underline">Forgot password?</Link><p className="mt-2">Need an account? Contact your administrator.</p></div>}
     </form>
   );
 }

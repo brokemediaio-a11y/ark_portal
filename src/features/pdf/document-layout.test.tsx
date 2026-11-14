@@ -22,6 +22,7 @@ describe("content-sized PDFs", () => {
       it(`${kind}: ${long ? "long documents grow without losing content" : "short documents avoid unnecessary blank space"} and header and footer panels sit inside the margins`, async () => {
         const quotation = createEmptyQuotation();
         const ticket = createEmptyTicket();
+        ticket.bookingReference = "PNR001";
         const document = kind === "quotation" ? quotation : ticket;
         document.segments = Array.from({ length: long ? 8 : 1 }, (_, index) => ({
           ...document.segments[0], id: `flight-${index}`, airlineName: "Example Airlines", airlineCode: "EA",
@@ -50,6 +51,10 @@ describe("content-sized PDFs", () => {
         expect(contents).toContain("Final itinerary note.");
         expect(contents.replace(/\s/g, "")).toContain("THANKYOUFORCHOOSING");
         expect(contents).toContain("All rights reserved.");
+        if (kind === "ticket") {
+          expect(contents.toUpperCase().replace(/\s/g, "")).toContain("PNRNUMBER");
+          expect(contents.toUpperCase().replace(/\s/g, "")).not.toContain("BOOKINGREFERENCE");
+        }
         if (kind === "ticket" && long) expect(contents).toContain("Passenger 30");
         for (const item of items) {
           expect(item.transform[5]).toBeGreaterThanOrEqual(0);
@@ -250,6 +255,8 @@ describe("mobile e-ticket with several bookings", () => {
     const buffer = await renderToBuffer(<TicketDocument ticket={buildCustomerTicket(ticket)} logoSrc={logoSrc} layout="mobile" />);
     const first = await (await getDocumentProxy(new Uint8Array(buffer))).getPage(1);
     const text = (await first.getTextContent()).items.map((item) => ("str" in item ? item.str : "")).join(" ").replace(/\s/g, "");
+    expect(text.toUpperCase()).toContain("PNRNUMBER");
+    expect(text.toUpperCase()).not.toContain("BOOKINGREFERENCE");
     for (const value of ["PTX09", "PTX0C", "TIKVND", "SAMADI/KAZEM", "235-2531625879", "6482404179838", "6482404179839"]) expect(text, value).toContain(value);
   }, 30_000);
 });
