@@ -1,4 +1,5 @@
 import { localToday } from "@/lib/dates";
+import { hasYoungTravellers, youngTravellerNames } from "./customer-view";
 import {
   AIRLINE_CODE,
   CURRENCY_CODE,
@@ -121,7 +122,14 @@ export function reviewQuotation(q: Quotation, today: string = localToday()): Rev
   else checkFormat(issues, "currency", q.currency, CURRENCY_CODE, "Currency should be a 3-letter code (e.g. PKR, USD).");
 
   if (q.sourceTotal === null)
-    issues.push({ field: "sourceTotal", level: "blocking", message: "Supplier price is missing." });
+    issues.push({ field: "sourceTotal", level: "blocking", message: hasYoungTravellers(q.passengers) ? "Adults' supplier price is missing." : "Supplier price is missing." });
+  if (hasYoungTravellers(q.passengers)) {
+    if (q.youngPricing.sourceTotal === null)
+      issues.push({ field: "youngPricing.sourceTotal", level: "blocking", message: "Children/infants supplier price is missing." });
+    const missing = [...youngTravellerNames(q).filter((t) => !t.name)];
+    if (missing.length)
+      issues.push({ field: "childNames", level: "warning", message: `Name missing for ${missing.map((t) => t.label).join(", ")}.` });
+  }
 
   if (!q.customer.name)
     issues.push({ field: "customer.name", level: "warning", message: "Customer name is empty." });

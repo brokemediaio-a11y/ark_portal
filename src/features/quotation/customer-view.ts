@@ -13,17 +13,27 @@ export interface CustomerQuote {
   watermark: string | null;
   quoteNumber: string;
   issuedOn: string;
-  validUntil: string;
   customerName: string | null;
   travellers: string | null;
   segments: CustomerSegment[];
   routeSummary: string;
-  totalPrice: string;
+  /** One bar when everyone pays one price; with children or infants, one for the adults and one for them. */
+  prices: CustomerPrice[];
   notes: string | null;
   /** Dari terms, printed beside the English ones. */
   termsDari: string[];
   fareConditions: string | null;
   terms: string[];
+}
+
+export interface CustomerPrice {
+  /** "Total price", "Adults", "Children & infants" */
+  label: string;
+  /** Who it is for, e.g. "2 adults" or "1 child, 1 infant"; null on a single total. */
+  detail: string | null;
+  /** The children's and infants' names, e.g. "Ali Khan (child)". */
+  names: string[];
+  amount: string;
 }
 
 export interface CustomerPoint {
@@ -66,6 +76,42 @@ export function formatIsoDate(value: string | null): string | null {
 
 const formatDate = (date: Date) =>
   new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric" }).format(date);
+
+const count = (n: number | null) => (typeof n === "number" && n > 0 ? n : 0);
+
+/** Whether the quotation has children or infants, who are then priced apart from the adults. */
+export const hasYoungTravellers = (p: Passengers) => count(p.children) + count(p.infants) > 0;
+
+/** Every child and infant the counts call for, with the name staff entered for them (or null). */
+export function youngTravellerNames(q: Pick<Quotation, "passengers" | "childNames" | "infantNames">): { label: string; type: "child" | "infant"; name: string | null }[] {
+  const list = (n: number, names: (string | null)[], type: "child" | "infant") =>
+    Array.from({ length: n }, (_, i) => ({ label: `${type === "child" ? "Child" : "Infant"} ${i + 1}`, type, name: names[i]?.trim() || null }));
+  return [...list(count(q.passengers.children), q.childNames, "child"), ...list(count(q.passengers.infants), q.infantNames, "infant")];
+}
+
+/** "Children & infants", "Children", "Infant"… after who is actually travelling. */
+function youngLabel(p: Passengers): string {
+  const children = count(p.children);
+  const infants = count(p.infants);
+  if (children && infants) return "Children & infants";
+  if (children) return children === 1 ? "Child" : "Children";
+  return infants === 1 ? "Infant" : "Infants";
+}
+
+function pricesOf(q: Quotation): CustomerPrice[] {
+  const adults = formatMoney(calculatePrice(q.sourceTotal, q.markup, q.currency)?.sellingTotal ?? null, q.currency);
+  if (!hasYoungTravellers(q.passengers)) return [{ label: "Total price", detail: null, names: [], amount: adults }];
+  const young = formatMoney(calculatePrice(q.youngPricing.sourceTotal, q.youngPricing.markup, q.currency)?.sellingTotal ?? null, q.currency);
+  return [
+    { label: count(q.passengers.adults) === 1 ? "Adult" : "Adults", detail: describeTravellers({ adults: q.passengers.adults, children: null, infants: null }), names: [], amount: adults },
+    {
+      label: youngLabel(q.passengers),
+      detail: describeTravellers({ adults: null, children: q.passengers.children, infants: q.passengers.infants }),
+      names: youngTravellerNames(q).flatMap((t) => (t.name ? [`${t.name} (${t.type})`] : [])),
+      amount: young,
+    },
+  ];
+}
 
 function describeTravellers(p: Passengers): string | null {
   const parts = [
@@ -133,21 +179,16 @@ export function watermarkFor(q: Quotation): string | null {
 }
 
 export function buildCustomerQuote(q: Quotation, now = new Date(q.createdAt)): CustomerQuote {
-  const price = calculatePrice(q.sourceTotal, q.markup, q.currency);
-  const validUntil = new Date(now);
-  validUntil.setDate(validUntil.getDate() + brand.quoteValidityDays);
-
 
   return {
     watermark: watermarkFor(q),
     quoteNumber: q.quoteNumber,
     issuedOn: formatDate(now),
-    validUntil: formatDate(validUntil),
     customerName: q.customer.name,
     travellers: describeTravellers(q.passengers),
     segments: q.segments.map((segment, index) => toCustomerSegment(segment, index, q.segments[index - 1])),
     routeSummary: routeSummaryOf(q.segments),
-    totalPrice: formatMoney(price?.sellingTotal ?? null, q.currency),
+    prices: pricesOf(q),
     notes: q.notes,
     fareConditions: q.fareConditions,
     terms: noteLines(q.termsText),
@@ -167,9 +208,9 @@ export function buildShareMessage(view: CustomerQuote): string {
       (s) => `• ${s.from.date ?? ""} ${s.from.time ?? ""} ${s.from.code ?? s.from.name ?? ""} → ${s.to.code ?? s.to.name ?? ""}${s.flight ? ` (${s.flight})` : ""}${s.duration ? `, ${s.duration}` : ""}`.replace(/\s+/g, " "),
     ),
     view.travellers ? `Travellers: ${view.travellers}` : null,
-    `Total price: ${view.totalPrice}`,
+    ...view.prices.map((p) => `${p.label === "Total price" ? "Total price" : `Price for ${p.label.toLowerCase()}${p.names.length ? ` (${p.names.join(", ")})` : ""}`}: ${p.amount}`),
     "",
-    `This quotation is valid until ${view.validUntil}. Fares are subject to availability until tickets are issued.`,
+    `${brand.fareNotice}. Fares are subject to availability until tickets are issued.`,
     "",
     `Kind regards,`,
     brand.name,

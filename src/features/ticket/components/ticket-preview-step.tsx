@@ -1,13 +1,14 @@
 "use client";
 
-import { CheckCheck, Download, Mail } from "lucide-react";
+import { CheckCheck, Download } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Button, buttonClasses } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { SelectField } from "@/components/ui/form-field";
 import { brand } from "@/config/brand";
 import { downloadBlob, PdfPreviewCard } from "@/features/pdf/pdf-preview-card";
 import { layoutFileSuffix, PDF_LAYOUTS, type PdfLayout } from "@/features/pdf/layout";
+import { SendPdfCard } from "@/features/pdf/send-pdf-card";
 import { useTicketPdf } from "@/features/pdf/use-quotation-pdf";
 import { buildCustomerTicket } from "../ticket-view";
 import type { TicketEditor } from "../use-ticket-editor";
@@ -17,7 +18,7 @@ const pdfFileName = (name: string, layout: PdfLayout) => `${brand.name.replace(/
 export function TicketPreviewStep({ editor }: { editor: TicketEditor }) {
   const { ticket: t, update } = editor;
   const view = useMemo(() => buildCustomerTicket(t), [t]);
-  const [layout, setLayout] = useState<PdfLayout>("desktop");
+  const [layout, setLayout] = useState<PdfLayout>("mobile");
   const pdf = useTicketPdf(view, layout);
   const [downloaded, setDownloaded] = useState<PdfLayout | null>(null);
   const fileName = pdfFileName(t.bookingReference ?? t.ticketRef, layout);
@@ -32,7 +33,6 @@ export function TicketPreviewStep({ editor }: { editor: TicketEditor }) {
   const lead = view.passengers[0]?.name ?? "Traveller";
   const subject = `Your e-ticket ${t.bookingReference ?? ""} — ${brand.name}`.replace(/\s+—/, " —");
   const body = [`Dear ${lead},`, "", `Please find attached your e-ticket for ${view.routeSummary}.`, "", "Kind regards,", brand.name, ...brand.contact.phones].join("\n");
-  const mailto = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 
   return (
     <div className="grid gap-6 lg:grid-cols-5">
@@ -57,14 +57,14 @@ export function TicketPreviewStep({ editor }: { editor: TicketEditor }) {
           </CardBody>
         </Card>
 
-        <Card>
-          <CardHeader icon={Mail} title="2. Send it to the traveller" description="Opens a ready-written email. Attach the downloaded PDF before sending." />
-          <CardBody>
-            <a href={mailto} className={buttonClasses({ variant: "secondary" }, "w-full")}>
-              <Mail size={18} aria-hidden /> Write email
-            </a>
-          </CardBody>
-        </Card>
+        <SendPdfCard
+          title="2. Send it to the traveller"
+          blob={pdf.blob}
+          fileName={fileName}
+          subject={subject}
+          message={body}
+          onSent={() => t.status === "draft" && update("status", "ready")}
+        />
 
         <Card>
           <CardBody className="flex flex-wrap items-center justify-between gap-3">

@@ -24,6 +24,8 @@ export const pdfStyles = StyleSheet.create({
   metaValue: { fontSize: 8.5, fontFamily: "Helvetica-Bold" },
   sectionTitle: { fontSize: 7, fontFamily: "Helvetica-Bold", color: c.muted, textTransform: "uppercase", letterSpacing: 1.4, marginBottom: 7, marginTop: 6 },
   paragraph: { fontSize: 7.5, lineHeight: 1.5, color: c.ink, marginBottom: 12 },
+  /** A section title set as the first line of its text (mobile paragraphs). */
+  sectionTitleInline: { fontSize: 7, fontFamily: "Helvetica-Bold", color: c.muted, letterSpacing: 1.4, lineHeight: 2.2 },
   term: { flexDirection: "row", fontSize: 7, color: c.muted, lineHeight: 1.5, marginBottom: 1.5 },
   bullet: { width: 9 },
   warning: { backgroundColor: "#D64545", color: "#FFFFFF", fontFamily: "Helvetica-Bold", fontSize: 8, letterSpacing: 0.6, textAlign: "center", paddingVertical: 5, borderRadius: 3, marginTop: 12 },
@@ -263,8 +265,17 @@ export function Meta({ label, value }: { label: string; value: string | null }) 
 export function Paragraph({ title, text }: { title: string; text: string | null }) {
   const mobile = useMobilePdf();
   if (!text) return null;
+  if (mobile)
+    // One block of text that starts with its title, so the title can't be left at the foot of a page without its
+    // text: a page keeps at least the title and two lines, and the rest flows on to the next page.
+    return (
+      <Text {...KEEP_WORDS} orphans={3} style={[pdfStyles.paragraph, { marginTop: 6 }, scriptFont(text)]}>
+        <Text style={pdfStyles.sectionTitleInline}>{`${title.toUpperCase()}\n`}</Text>
+        {text}
+      </Text>
+    );
   return (
-    <View wrap={mobile}>
+    <View>
       <Text style={pdfStyles.sectionTitle} minPresenceAhead={30}>{title}</Text>
       <Text {...KEEP_WORDS} style={[pdfStyles.paragraph, scriptFont(text)]}>{text}</Text>
     </View>

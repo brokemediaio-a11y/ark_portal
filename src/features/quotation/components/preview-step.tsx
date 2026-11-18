@@ -1,29 +1,27 @@
 "use client";
 
-import { CheckCheck, Copy, Download, Mail, MessageCircle, Send } from "lucide-react";
+import { CheckCheck, Download } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Button, buttonClasses } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { SelectField } from "@/components/ui/form-field";
 import { brand } from "@/config/brand";
 import { downloadBlob, PdfPreviewCard } from "@/features/pdf/pdf-preview-card";
 import { layoutFileSuffix, PDF_LAYOUTS, type PdfLayout } from "@/features/pdf/layout";
+import { SendPdfCard } from "@/features/pdf/send-pdf-card";
 import { useQuotationPdf } from "@/features/pdf/use-quotation-pdf";
 import { buildCustomerQuote, buildShareMessage } from "../customer-view";
 import type { QuotationEditor } from "../use-quotation-editor";
 
 const pdfFileName = (quoteNumber: string, layout: PdfLayout) => `${brand.name.replace(/\s+/g, "-")}-Quotation-${quoteNumber}${layoutFileSuffix(layout)}.pdf`;
 
-const digitsOnly = (phone: string | null) => (phone ?? "").replace(/\D/g, "");
-
 export function PreviewStep({ editor }: { editor: QuotationEditor }) {
   const { quotation: q, update } = editor;
   const view = useMemo(() => buildCustomerQuote(q), [q]);
-  const [layout, setLayout] = useState<PdfLayout>("desktop");
+  const [layout, setLayout] = useState<PdfLayout>("mobile");
   const pdf = useQuotationPdf(view, layout);
   const fileName = pdfFileName(q.quoteNumber, layout);
   const message = useMemo(() => buildShareMessage(view), [view]);
-  const [copied, setCopied] = useState(false);
   const [downloaded, setDownloaded] = useState<PdfLayout | null>(null);
 
   const download = () => {
@@ -34,19 +32,6 @@ export function PreviewStep({ editor }: { editor: QuotationEditor }) {
   };
 
   const subject = `Your flight quotation ${q.quoteNumber} — ${brand.name}`;
-  const mailto = `mailto:${encodeURIComponent(q.customer.email ?? "")}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
-  const phone = digitsOnly(q.customer.phone);
-  const whatsapp = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-
-  const copyMessage = async () => {
-    try {
-      await navigator.clipboard.writeText(message);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      setCopied(false);
-    }
-  };
 
   return (
     <div className="grid gap-6 lg:grid-cols-5">
@@ -71,26 +56,16 @@ export function PreviewStep({ editor }: { editor: QuotationEditor }) {
           </CardBody>
         </Card>
 
-        <Card>
-          <CardHeader icon={Send} title="2. Send it to the customer" description="Opens a ready-written message. Attach the downloaded PDF before sending." />
-          <CardBody className="space-y-3">
-            <a href={mailto} className={buttonClasses({ variant: "secondary" }, "w-full")}>
-              <Mail size={18} aria-hidden /> Write email
-            </a>
-            {phone.length >= 8 ? (
-              <a href={whatsapp} target="_blank" rel="noopener noreferrer" className={buttonClasses({ variant: "secondary" }, "w-full")}>
-                <MessageCircle size={18} aria-hidden /> Open WhatsApp chat
-              </a>
-            ) : (
-              <Button variant="secondary" icon={MessageCircle} className="w-full" disabled title="Add the customer's phone number first">
-                WhatsApp (add phone number first)
-              </Button>
-            )}
-            <Button variant="ghost" icon={copied ? CheckCheck : Copy} className="w-full" onClick={copyMessage}>
-              {copied ? "Message copied" : "Copy message text"}
-            </Button>
-          </CardBody>
-        </Card>
+        <SendPdfCard
+          title="2. Send it to the customer"
+          blob={pdf.blob}
+          fileName={fileName}
+          subject={subject}
+          message={message}
+          email={q.customer.email}
+          phone={q.customer.phone}
+          onSent={() => q.status === "draft" && update("status", "ready")}
+        />
 
         <Card>
           <CardBody className="flex flex-wrap items-center justify-between gap-3">

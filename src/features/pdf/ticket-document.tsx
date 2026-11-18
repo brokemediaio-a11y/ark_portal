@@ -4,7 +4,7 @@ import type { CoveredFlights, CustomerPassenger, CustomerTicket, FlightTag } fro
 import { BrandHeader, KEEP_WORDS, scriptFont } from "./brand-frame";
 import { DocumentPage } from "./document-page";
 import { AirlineMark, BilingualNotes, FlightItinerary, Meta, MetaGrid, Paragraph, pdfStyles } from "./itinerary";
-import { type PdfLayout, useMobilePdf } from "./layout";
+import { layoutReporter, type PdfLayout, useMobilePdf } from "./layout";
 
 const c = brand.colors;
 
@@ -156,13 +156,17 @@ interface TicketDocumentProps {
   logoSrc?: string | null;
   airlineLogos?: Record<string, string>;
   layout?: PdfLayout;
+  /** Called with each page's content height once the document is laid out (used to trim mobile pages). */
+  onLayout?: (pageHeights: number[]) => void;
+  /** The portal's address, for the footer's phone links (see phoneLink). */
+  siteOrigin?: string | null;
 }
 
 /** The standard Ark Travelers e-ticket, whatever the supplier's format was. */
-export function TicketDocument({ ticket, logoSrc = null, airlineLogos = {}, layout = "desktop" }: TicketDocumentProps) {
+export function TicketDocument({ ticket, logoSrc = null, airlineLogos = {}, layout = "desktop", onLayout, siteOrigin = null }: TicketDocumentProps) {
   return (
-    <Document title={`E-ticket ${ticket.bookingReference ?? ticket.ticketRef}`} author={brand.legalName} creator={brand.legalName} producer={brand.legalName}>
-      <DocumentPage layout={layout} reference={ticket.bookingReference ? `${ticket.ticketRef} · PNR ${ticket.bookingReference}` : ticket.ticketRef}>
+    <Document title={`E-ticket ${ticket.bookingReference ?? ticket.ticketRef}`} author={brand.legalName} creator={brand.legalName} producer={brand.legalName} onRender={layoutReporter(onLayout)}>
+      <DocumentPage layout={layout} siteOrigin={siteOrigin} reference={ticket.bookingReference ? `${ticket.ticketRef} · PNR ${ticket.bookingReference}` : ticket.ticketRef}>
         <BrandHeader logoSrc={logoSrc} />
         {ticket.watermark && <Text style={pdfStyles.warning}>{ticket.watermark}</Text>}
 

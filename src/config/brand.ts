@@ -37,8 +37,8 @@ export const brand = {
     { network: "instagram", label: "@arktravelersab", url: "https://www.instagram.com/arktravelersab?dlrf=N3lndml6NjVzYzho" },
     { network: "tiktok", label: "ArkTravelers", url: "https://www.tiktok.com/@arktravelersab?_r=1&_t=ZG-9BEpcTvTZIm" },
   ],
-  /** Number of days a quotation is shown as valid. Placeholder policy. */
-  quoteValidityDays: 3,
+  /** Printed under a quotation's total price, and in the message sent with it. */
+  fareNotice: "Fare subject to change without prior notice",
   quoteNumberPrefix: "ARK",
   ticketNumberPrefix: "ARK-T",
   defaultTerms: [

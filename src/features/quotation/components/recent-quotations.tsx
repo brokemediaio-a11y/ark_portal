@@ -60,7 +60,7 @@ export function RecentQuotations({ limit }: { limit?: number } = {}) {
                       {q.quoteNumber} · {q.customer.name ?? "No customer name"} · updated {relativeTime(q.updatedAt)}
                     </p>
                   </div>
-                  <span className="text-sm font-semibold tabular-nums text-ink">{view.totalPrice}</span>
+                  <span className="text-sm font-semibold tabular-nums text-ink">{view.prices.map((p) => p.amount).join(" + ")}</span>
                   <ArrowRight size={16} className="text-ink-faint transition-transform group-hover:translate-x-0.5" aria-hidden />
                 </Link>
                 {user && can(user.role, "delete") && <Button variant="danger" size="sm" icon={Trash2} aria-label={`Delete quotation ${q.quoteNumber}`} title="Delete" onClick={() => void remove(q.id, q.quoteNumber)} />}

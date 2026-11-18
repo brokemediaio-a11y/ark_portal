@@ -1,6 +1,7 @@
 import { Circle, Defs, Font, G, Image, Line, LinearGradient, Link, Path, Rect, Stop, StyleSheet, Svg, Text, View } from "@react-pdf/renderer";
 import { brand } from "@/config/brand";
-import { useMobilePdf } from "./layout";
+import { useContext } from "react";
+import { PdfSiteContext, useMobilePdf } from "./layout";
 
 /** Header and closing footer shared by every Ark Travelers PDF (quotations and e-tickets). */
 
@@ -69,8 +70,12 @@ const WHATSAPP_GREEN = "#25D366";
 
 /** "+46 700 101 401" → a WhatsApp chat with that number (wa.me takes the digits only). */
 export const whatsAppLink = (phone: string) => `https://wa.me/${phone.replace(/\D/g, "")}`;
-/** "+46 700 101 401" → a call from the phone app. */
-export const phoneLink = (phone: string) => `tel:${phone.replace(/[^\d+]/g, "")}`;
+/**
+ * "+46 700 101 401" → a call from the phone app. Many Android PDF viewers only open web links, so with the portal's
+ * address the link goes to its /call page, which opens the phone app; without it, a plain "tel:" link.
+ */
+export const phoneLink = (phone: string, siteOrigin: string | null = null) =>
+  siteOrigin ? `${siteOrigin.replace(/\/$/, "")}/call/${phone.replace(/\D/g, "")}` : `tel:${phone.replace(/[^\d+]/g, "")}`;
 
 /** Brand marks from Simple Icons (CC0), drawn filled rather than outlined. */
 const FILLED_ICONS: Partial<Record<IconName, string>> = {
@@ -235,7 +240,7 @@ const f = StyleSheet.create({
   small: { fontSize: 6.5, color: BAND.muted },
 });
 
-const fmPin = { marginTop: "auto", paddingTop: 8, flexShrink: 0 } as const;
+const fmPin = { paddingTop: 8, flexShrink: 0 } as const;
 
 const MOBILE_FOOTER_LEFT = 70;
 const MOBILE_FOOTER_RIGHT = 98;
@@ -305,6 +310,7 @@ function ClosingContact({ icon, children, href }: { icon: IconName; children: st
  */
 export function BrandClosing({ reference }: { reference: string }) {
   const { mobile, st } = useFooterStyle();
+  const siteOrigin = useContext(PdfSiteContext);
   const closing = (
     <View style={st("wrap")} wrap={false}>
       <BandBackground id="footer-band" />
@@ -332,7 +338,7 @@ export function BrandClosing({ reference }: { reference: string }) {
           <Text style={st("label")}>Contact us</Text>
           {brand.contact.phones.map((phone) => (
             // The footer offers a phone call; the header opens a WhatsApp chat.
-            <ClosingContact key={phone} icon="phone" href={phoneLink(phone)}>{phone}</ClosingContact>
+            <ClosingContact key={phone} icon="phone" href={phoneLink(phone, siteOrigin)}>{phone}</ClosingContact>
           ))}
           <ClosingContact icon="mail" href={`mailto:${brand.contact.email}`}>{brand.contact.email}</ClosingContact>
           <ClosingContact icon="globe" href={brand.contact.websiteUrl}>{brand.contact.website}</ClosingContact>
@@ -346,7 +352,7 @@ export function BrandClosing({ reference }: { reference: string }) {
       </View>
     </View>
   );
-  // Mobile: the footer sits at the bottom of the last page, whether it follows the content or had to move to a page
-  // of its own. The padding keeps a gap above it when the content fills the page.
+  // Mobile: the footer follows the content, moving to a new page whole only when it does not fit; the page then
+  // ends right below it. The padding keeps a gap above it.
   return mobile ? <View wrap={false} style={fmPin}>{closing}</View> : closing;
 }

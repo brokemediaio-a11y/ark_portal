@@ -11,7 +11,8 @@ import { buildCustomerTicket } from "@/features/ticket/ticket-view";
 import { PAGE_PADDING_X, registerPdfFonts } from "./brand-frame";
 import { QuotationDocument } from "./quotation-document";
 import { TicketDocument } from "./ticket-document";
-import { MOBILE_PAGE } from "./layout";
+import { MOBILE_PAGE, renderTrimmed, trimPdfPages } from "./layout";
+import type { ReactElement } from "react";
 
 beforeAll(() => registerPdfFonts(resolve("public/fonts/Vazirmatn-Bold.ttf")));
 const logoSrc = resolve("public/brand/ark-logo-white.png");
@@ -180,16 +181,16 @@ describe("mobile PDFs", () => {
       });
       const last = pages.at(-1)!;
       expect(last).toContain("All rights reserved.");
-      expect(last).toContain(`${pdf.numPages} / ${pdf.numPages}`);
       if (kind === "ticket") expect(pages.join(" ")).toContain("Passenger 12");
     }, 30_000);
   }
 
   /** Text items on a page, with their distance from the top of the page. */
-  async function pageText(buffer: Buffer, number: number) {
+  async function pageText(buffer: Uint8Array, number: number) {
     const page = await (await getDocumentProxy(new Uint8Array(buffer))).getPage(number);
-    const height = page.getViewport({ scale: 1 }).height;
-    return (await page.getTextContent()).items.flatMap((item) => ("str" in item && item.str.trim() ? [{ str: item.str, top: height - item.transform[5] }] : []));
+    const viewport = page.getViewport({ scale: 1 });
+    return (await page.getTextContent()).items.flatMap((item) =>
+      "str" in item && item.str.trim() ? [{ str: item.str, top: viewport.convertToViewportPoint(item.transform[4], item.transform[5])[1] }] : []);
   }
 
   it("keeps the header on one row: names and every contact line sit in the header band", async () => {
@@ -205,27 +206,53 @@ describe("mobile PDFs", () => {
     expect(find("Ark Travelers AB")!.top).toBeLessThan(Math.max(...tops));
   }, 30_000);
 
-  it("sets the footer at the bottom of the last page, and moves it to a new page only when it does not fit", async () => {
+  it("ends every page where its content ends, keeps the footer whole and only moves it when it does not fit", async () => {
     const base = buildCustomerQuote({ ...createEmptyQuotation(), segments: segments.slice(0, 1) });
-    const pageCounts = new Set<number>();
+    const render = async (element: ReactElement) => new Uint8Array(await renderToBuffer(element as Parameters<typeof renderToBuffer>[0]));
+    let trimmedEarlierPage = false;
     let sharedPage = false;
+    let ownPage = false;
     for (let count = 0; count <= 40; count += 2) {
       const quote = { ...base, terms: Array.from({ length: count }, (_, i) => `Term number ${i + 1}, long enough to take a full line of the page.`) };
-      const buffer = await renderToBuffer(<QuotationDocument quote={quote} logoSrc={logoSrc} layout="mobile" />);
-      const pages = (await getDocumentProxy(new Uint8Array(buffer))).numPages;
-      pageCounts.add(pages);
-      const last = await pageText(buffer, pages);
+      const bytes = await renderTrimmed("mobile", (onLayout) => <QuotationDocument quote={quote} logoSrc={logoSrc} layout="mobile" onLayout={onLayout} />, render);
+      const pdf = await getDocumentProxy(new Uint8Array(bytes));
+      for (let number = 1; number <= pdf.numPages; number++) {
+        const page = await pdf.getPage(number);
+        const height = page.getViewport({ scale: 1 }).height;
+        expect(height).toBeLessThanOrEqual(MOBILE_PAGE.height);
+        const items = await pageText(bytes, number);
+        // Nothing is cut off: every line is inside the trimmed page, and the page ends soon after its last line.
+        const lowest = Math.max(...items.map((item) => item.top));
+        expect(lowest, `${count} terms, page ${number}`).toBeLessThanOrEqual(height);
+        expect(height - lowest, `${count} terms, page ${number}`).toBeLessThan(40);
+        if (number < pdf.numPages && height < MOBILE_PAGE.height - 20) trimmedEarlierPage = true;
+      }
+      const last = await pageText(bytes, pdf.numPages);
+      // The whole footer is on the last page.
+      for (const part of ["followus", "contactus", "allrightsreserved"]) expect(last.map((i) => i.str).join("").replace(/\s/g, "").toLowerCase()).toContain(part);
       const follow = last.find((item) => item.str.replace(/\s/g, "").toLowerCase().includes("followus"))!;
-      const rights = last.find((item) => item.str.includes("All rights reserved."))!;
-      // The footer's last line sits just above the page number, at the bottom of the page.
-      expect(rights.top, `${count} terms`).toBeGreaterThan(MOBILE_PAGE.height - 50);
-      // The footer only gets a page of its own when it can't fit under the content.
-      const contentAbove = last.some((item) => item.top < follow.top - 20);
-      if (contentAbove) sharedPage = true;
+      if (last.some((item) => item.top < follow.top - 20)) sharedPage = true;
+      else ownPage = true;
     }
-    expect(pageCounts.size).toBeGreaterThan(1);
+    expect(trimmedEarlierPage).toBe(true);
     expect(sharedPage).toBe(true);
-  }, 120_000);
+    expect(ownPage).toBe(true);
+  }, 180_000);
+});
+
+describe("trimPdfPages", () => {
+  it("keeps the file valid: every cross-reference entry still points at its object", async () => {
+    const buffer = new Uint8Array(await renderToBuffer(<QuotationDocument quote={buildCustomerQuote(createEmptyQuotation())} logoSrc={logoSrc} layout="mobile" />));
+    const pages = (await getDocumentProxy(new Uint8Array(buffer))).numPages;
+    const text = Buffer.from(trimPdfPages(buffer, Array.from({ length: pages }, () => 300))).toString("latin1");
+    expect(text.match(/\/MediaBox \[0 198\.00 280 498\]/g)).toHaveLength(pages);
+    const xrefAt = Number(/startxref\n(\d+)/.exec(text)![1]);
+    expect(text.slice(xrefAt, xrefAt + 5)).toBe("xref\n");
+    const entries = text.slice(xrefAt).split("\n").slice(2).filter((line) => / n $/.test(line));
+    entries.forEach((entry, i) => expect(text.slice(Number(entry.slice(0, 10))).startsWith(`${i + 1} 0 obj`)).toBe(true));
+    // Anything that isn't react-pdf's plain output is left alone.
+    expect(trimPdfPages(buffer, [1])).toBe(buffer);
+  });
 });
 
 describe("contact links", () => {
@@ -240,6 +267,14 @@ describe("contact links", () => {
     expect(calls.map((l) => l.url)).toEqual(["tel:+46700101401", "tel:+4915257111901"]);
     // WhatsApp in the header at the top, calls in the footer at the bottom.
     expect(Math.max(...whatsApp.map((l) => l.top))).toBeLessThan(Math.min(...calls.map((l) => l.top)));
+  });
+
+  it("links the footer numbers to the portal's call page, which Android PDF viewers can open", async () => {
+    const buffer = await renderToBuffer(<TicketDocument ticket={buildCustomerTicket(createEmptyTicket())} logoSrc={logoSrc} siteOrigin="https://portal.example.com/" />);
+    const page = await (await getDocumentProxy(new Uint8Array(buffer))).getPage(1);
+    const urls = (await page.getAnnotations()).flatMap((a: { url?: string }) => (a.url ? [a.url] : []));
+    expect(urls.filter((u) => u.includes("/call/"))).toEqual(["https://portal.example.com/call/46700101401", "https://portal.example.com/call/4915257111901"]);
+    expect(urls.some((u) => u.startsWith("tel:"))).toBe(false);
   });
 });
 

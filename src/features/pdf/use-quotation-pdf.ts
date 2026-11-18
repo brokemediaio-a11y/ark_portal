@@ -4,7 +4,7 @@ import { createElement, useEffect, useRef, useState, type ReactElement } from "r
 import { brand } from "@/config/brand";
 import type { CustomerQuote } from "@/features/quotation/customer-view";
 import type { CustomerTicket } from "@/features/ticket/ticket-view";
-import type { PdfLayout } from "./layout";
+import { renderTrimmed, type PdfLayout } from "./layout";
 
 /** Logos already loaded, so the preview doesn't refetch them on every edit. */
 const airlineLogoCache = new Map<string, string>();
@@ -41,7 +41,10 @@ async function preparePdf(airlineCodes: (string | null)[]) {
   registerPdfFonts(new URL(brand.persianFontPath, window.location.origin).toString());
   const logoSrc = new URL(brand.pdfLogoPath, window.location.origin).toString();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- react-pdf's pdf() expects a Document element
-  const toBlob = (element: ReactElement) => pdf(element as any).toBlob();
+  const toBytes = async (element: ReactElement) => new Uint8Array(await (await pdf(element as any).toBlob()).arrayBuffer());
+  /** A mobile PDF's pages end where their content ends (see trimPdfPages). */
+  const toBlob = async (layout: PdfLayout, build: (onLayout?: (pageHeights: number[]) => void) => ReactElement) =>
+    new Blob([(await renderTrimmed(layout, build, toBytes)) as Uint8Array<ArrayBuffer>], { type: "application/pdf" });
   return { airlineLogos, logoSrc, toBlob };
 }
 
@@ -51,7 +54,7 @@ export async function renderQuotationPdf(quote: CustomerQuote, layout: PdfLayout
     import("./quotation-document"),
     preparePdf(quote.segments.map((s) => s.airlineCode)),
   ]);
-  return toBlob(createElement(QuotationDocument, { quote, logoSrc, airlineLogos, layout }));
+  return toBlob(layout, (onLayout) => createElement(QuotationDocument, { quote, logoSrc, airlineLogos, layout, onLayout, siteOrigin: window.location.origin }));
 }
 
 /** Renders an Ark e-ticket to a PDF Blob. */
@@ -60,7 +63,7 @@ export async function renderTicketPdf(ticket: CustomerTicket, layout: PdfLayout 
     import("./ticket-document"),
     preparePdf(ticket.segments.map((s) => s.airlineCode)),
   ]);
-  return toBlob(createElement(TicketDocument, { ticket, logoSrc, airlineLogos, layout }));
+  return toBlob(layout, (onLayout) => createElement(TicketDocument, { ticket, logoSrc, airlineLogos, layout, onLayout, siteOrigin: window.location.origin }));
 }
 
 export interface PdfState {

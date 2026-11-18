@@ -64,6 +64,13 @@ export const passengersSchema = z.object({
   infants: z.number().int().min(0).nullable(),
 });
 
+/** Children and infants, priced apart from the adults: their own supplier price and markup. */
+export const youngPricingSchema = z.object({
+  /** Supplier's price for all children and infants together. Internal, never printed. */
+  sourceTotal: z.number().min(0).nullable(),
+  markup: markupSchema,
+});
+
 export const customerSchema = z.object({
   name: optionalText,
   email: optionalText,
@@ -119,6 +126,11 @@ export const quotationSchema = z.object({
   /** Supplier's total price — internal, never printed on the customer PDF. */
   sourceTotal: z.number().min(0).nullable(),
   markup: markupSchema,
+  /** Used only when the quotation has children or infants; the price above is then the adults'. */
+  youngPricing: youngPricingSchema.default({ sourceTotal: null, markup: { type: "fixed", value: 0 } }),
+  /** Each child's and infant's name, printed on their price bar. As many as the passenger counts. */
+  childNames: z.array(z.string().nullable()).default([]),
+  infantNames: z.array(z.string().nullable()).default([]),
   fareConditions: optionalText,
   notes: optionalText,
   termsText: optionalText,
@@ -132,6 +144,7 @@ export const quotationSchema = z.object({
 
 export type FlightSegment = z.infer<typeof flightSegmentSchema>;
 export type Markup = z.infer<typeof markupSchema>;
+export type YoungPricing = z.infer<typeof youngPricingSchema>;
 export type Passengers = z.infer<typeof passengersSchema>;
 export type Customer = z.infer<typeof customerSchema>;
 export type ReviewFlag = z.infer<typeof reviewFlagSchema>;
